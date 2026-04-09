@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>QNS — Quality Notification System</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   FONTS  — no external CDN needed, works inside SharePoint CSP
+   Segoe UI Variable = Windows 11 · Segoe UI = Windows 10 fallback
+   Cascadia Code = modern Windows mono · Consolas = classic fallback
+═══════════════════════════════════════════════════════════════════ */
+:root {
+  --font: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Cascadia Code', 'Cascadia Mono', 'Consolas', monospace;
+
+  /* ── Palette ── */
+  --navy:       #0D1F35;
+  --navy-mid:   #1A3150;
+  --navy-lite:  #254670;
+  --blue:       #0F6CBD;   /* Microsoft Fluent blue */
+  --blue-lt:    #D6E8FA;
+  --blue-dark:  #0D5CA6;
+  --amber:      #C4901A;
+  --amber-lt:   #FEF3D6;
+  --amber-dark: #A67C15;
+  --green:      #107C10;   /* Microsoft green */
+  --green-lt:   #DFF0DF;
+  --green-dark: #0D6A0D;
+  --crimson:    #A4262C;
+  --crimson-lt: #F9E8E8;
+  --crimson-dark:#8A1F24;
+  --red:        #C50F1F;
+  --red-lt:     #FDDED8;
+  --gray-50:    #F8F9FA;
+  --gray-100:   #F0F2F5;
+  --gray-200:   #E1E5EA;
+  --gray-300:   #C8CDD5;
+  --gray-400:   #8A919C;
+  --gray-500:   #5E6470;
+  --gray-700:   #2E3340;
+  --gray-900:   #111318;
+  --white:      #FFFFFF;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.05);
+  --shadow:    0 3px 8px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.06);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.10), 0 3px 8px rgba(0,0,0,.06);
+  --radius:    8px;
+  --radius-sm: 5px;
+  --radius-lg: 12px;
+  --nav-h:     56px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: var(--font);
+  background: var(--gray-100);
+  color: var(--gray-900);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+button { cursor: pointer; font-family: var(--font); }
+input, select, textarea { font-family: var(--font); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════════════════════════════ */
+#nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--nav-h); background: var(--navy);
+  display: flex; align-items: center; padding: 0 20px; gap: 12px;
+  z-index: 100; box-shadow: 0 1px 0 var(--navy-mid), 0 2px 8px rgba(0,0,0,.25);
+}
+#nav.hidden { display: none; }
+
+.nav-brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+.nav-logo {
+  width: 32px; height: 32px; background: var(--blue); border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; color: var(--white); letter-spacing: -.3px;
+}
+.nav-title { color: var(--white); font-weight: 600; font-size: 15px; letter-spacing: -.1px; }
+.nav-title span { color: var(--gray-400); font-weight: 400; font-size: 12px; margin-left: 8px; }
+
+.nav-btn {
+  padding: 6px 14px; border-radius: var(--radius-sm); border: none;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background .12s, opacity .12s;
+  display: flex; align-items: center; gap: 6px;
+}
+.nav-btn-primary { background: var(--blue); color: var(--white); }
+.nav-btn-primary:hover { background: var(--blue-dark); }
+.nav-btn-ghost { background: transparent; color: var(--gray-300); border: 1px solid var(--navy-lite); }
+.nav-btn-ghost:hover { background: var(--navy-lite); color: var(--white); }
+.nav-sep { width: 1px; height: 26px; background: var(--navy-lite); }
+.nav-user { color: var(--gray-300); font-size: 12px; display: flex; align-items: center; gap: 8px; }
+.nav-avatar {
+  width: 28px; height: 28px; background: var(--blue); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--white); font-weight: 700; font-size: 11px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SPLASH / LOGIN
+═══════════════════════════════════════════════════════════════════ */
+#view-splash {
+  position: fixed; inset: 0;
+  background: var(--navy);
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 24px;
+  z-index: 9999;
+}
+#view-splash.active { display: flex; }
+
+.splash-logo {
+  width: 72px; height: 72px; background: var(--blue); border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 700; color: var(--white); letter-spacing: -1px;
+  box-shadow: 0 0 40px rgba(15,108,189,.4);
+}
+.splash-title { color: var(--white); font-size: 22px; font-weight: 700; text-align: center; }
+.splash-sub { color: var(--gray-400); font-size: 13px; text-align: center; max-width: 340px; line-height: 1.6; }
+.splash-spinner {
+  width: 36px; height: 36px; border: 3px solid rgba(255,255,255,.15);
+  border-top-color: var(--blue); border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+.splash-status { color: var(--gray-500); font-size: 12px; font-family: var(--mono); }
+
+/* Demo mode card */
+.demo-card {
+  background: var(--navy-mid); border: 1px solid var(--navy-lite);
+  border-radius: var(--radius-lg); padding: 28px 36px;
+  text-align: center; max-width: 380px; width: 90%;
+}
+.demo-card p { color: var(--gray-400); font-size: 12px; line-height: 1.7; margin: 14px 0; }
+.demo-card strong { color: var(--gray-300); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   VIEWS
+═══════════════════════════════════════════════════════════════════ */
+.view { display: none; min-height: 100vh; }
+.view.active { display: block; }
+.view-body { padding-top: calc(var(--nav-h) + 22px); padding-bottom: 48px; }
+.page-container { max-width: 1260px; margin: 0 auto; padding: 0 22px; }
+.page-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 22px; flex-wrap: wrap; gap: 12px;
+}
+.page-title { font-size: 20px; font-weight: 700; color: var(--navy); letter-spacing: -.2px; }
+.page-title small { font-size: 12px; font-weight: 400; color: var(--gray-400); margin-left: 8px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   KPI CARDS
+═══════════════════════════════════════════════════════════════════ */
+.kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+@media(max-width:880px){ .kpi-grid { grid-template-columns: repeat(2,1fr); } }
+@media(max-width:480px){ .kpi-grid { grid-template-columns: 1fr; } }
+
+.kpi-card {
+  background: var(--white); border-radius: var(--radius);
+  padding: 18px 20px; box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-200);
+  display: flex; align-items: center; gap: 14px;
+  transition: box-shadow .15s, transform .15s;
+}
+.kpi-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.kpi-icon {
+  width: 42px; height: 42px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.kpi-value { font-size: 26px; font-weight: 700; color: var(--navy); line-height: 1; font-variant-numeric: tabular-nums; }
+.kpi-label { font-size: 11px; color: var(--gray-500); margin-top: 3px; font-weight: 500; text-transform: uppercase; letter-spacing: .4px; }
+
+.kpi-card.k-open   .kpi-icon { background: var(--blue-lt);    color: var(--blue); }
+.kpi-card.k-crit   .kpi-icon { background: var(--red-lt);     color: var(--red); }
+.kpi-card.k-closed .kpi-icon { background: var(--green-lt);   color: var(--green); }
+.kpi-card.k-avg    .kpi-icon { background: var(--amber-lt);   color: var(--amber); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   FILTER BAR
+═══════════════════════════════════════════════════════════════════ */
+.filter-bar {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius); padding: 12px 16px;
+  margin-bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap;
+  align-items: center; box-shadow: var(--shadow-sm);
+}
+.filter-bar input, .filter-bar select {
+  padding: 7px 11px; border: 1px solid var(--gray-300); border-radius: var(--radius-sm);
+  font-size: 13px; color: var(--gray-700); background: var(--gray-50);
+  transition: border-color .12s; min-width: 130px;
+}
+.filter-bar input { min-width: 220px; flex: 1; }
+.filter-bar input:focus, .filter-bar select:focus {
+  outline: none; border-color: var(--blue); background: var(--white);
+  box-shadow: 0 0 0 2px rgba(15,108,189,.15);
+}
+.btn-clear {
+  padding: 7px 13px; border: 1px solid var(--gray-300); background: transparent;
+  border-radius: var(--radius-sm); font-size: 12px; color: var(--gray-500);
+  font-weight: 500; cursor: pointer; white-space: nowrap;
+}
+.btn-clear:hover { background: var(--gray-100); color: var(--gray-700); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABLE
+═══════════════════════════════════════════════════════════════════ */
+.table-wrap {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.table-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--gray-200);
+}
+.table-count { font-size: 12px; color: var(--gray-500); }
+.table-count strong { color: var(--gray-900); }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  background: var(--gray-50); padding: 9px 13px; text-align: left;
+  font-size: 11px; font-weight: 700; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: .5px;
+  border-bottom: 1px solid var(--gray-200); white-space: nowrap;
+}
+tbody tr { border-bottom: 1px solid var(--gray-100); cursor: pointer; transition: background .08s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #F5F8FC; }
+tbody td { padding: 10px 13px; font-size: 13px; color: var(--gray-700); vertical-align: middle; }
+td.mono { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--navy); }
+.empty-row { text-align: center; padding: 52px 24px; }
+.empty-icon { font-size: 32px; margin-bottom: 10px; }
+.empty-text { color: var(--gray-400); font-size: 13px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   BADGES
+═══════════════════════════════════════════════════════════════════ */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 4px; font-size: 11px; font-weight: 600;
+  white-space: nowrap; letter-spacing: .1px;
+}
+.badge-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+.b-open       { background: var(--blue-lt);    color: var(--blue-dark); }
+.b-open       .badge-dot { background: var(--blue); }
+.b-assigned   { background: var(--amber-lt);   color: var(--amber-dark); }
+.b-assigned   .badge-dot { background: var(--amber); }
+.b-progress   { background: #FFF4E0;            color: #8B5E00; }
+.b-progress   .badge-dot { background: #C47B00; }
+.b-corrected  { background: var(--green-lt);   color: var(--green-dark); }
+.b-corrected  .badge-dot { background: var(--green); }
+.b-closed     { background: #E8F5E8;            color: var(--green-dark); }
+.b-closed     .badge-dot { background: var(--green); }
+.b-escalated  { background: var(--red-lt);     color: var(--red); }
+.b-escalated  .badge-dot { background: var(--red); }
+
+.c-critical   { background: var(--red-lt);     color: var(--red); }
+.c-critical   .badge-dot { background: var(--red); }
+.c-nextpm     { background: var(--amber-lt);   color: var(--amber-dark); }
+.c-nextpm     .badge-dot { background: var(--amber); }
+.c-endrun     { background: var(--gray-200);   color: var(--gray-500); }
+.c-endrun     .badge-dot { background: var(--gray-400); }
+
+.days-chip {
+  display: inline-flex; align-items: center;
+  padding: 2px 7px; border-radius: 4px;
+  font-size: 11px; font-weight: 600; font-family: var(--mono);
+}
+.d-ok   { background: var(--green-lt); color: var(--green-dark); }
+.d-warn { background: var(--amber-lt); color: var(--amber-dark); }
+.d-late { background: var(--red-lt);   color: var(--red); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════════════════════════════ */
+.btn {
+  padding: 8px 18px; border-radius: var(--radius-sm); font-size: 13px;
+  font-weight: 600; border: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px;
+  transition: background .12s, box-shadow .12s; white-space: nowrap;
+}
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-sm { padding: 6px 13px; font-size: 12px; }
+.btn-primary { background: var(--blue); color: var(--white); }
+.btn-primary:hover { background: var(--blue-dark); }
+.btn-amber   { background: var(--amber); color: var(--white); }
+.btn-amber:hover { background: var(--amber-dark); }
+.btn-green   { background: var(--green); color: var(--white); }
+.btn-green:hover { background: var(--green-dark); }
+.btn-crimson { background: var(--crimson); color: var(--white); }
+.btn-crimson:hover { background: var(--crimson-dark); }
+.btn-ghost   { background: transparent; color: var(--gray-700); border: 1px solid var(--gray-300); }
+.btn-ghost:hover { background: var(--gray-100); }
+.btn-danger  { background: var(--red-lt); color: var(--red); border: 1px solid #FAB8B3; }
+.btn-danger:hover { background: #FDD0CC; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   FORM
+═══════════════════════════════════════════════════════════════════ */
+.form-card {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius); padding: 26px 30px;
+  box-shadow: var(--shadow-sm); max-width: 840px; margin: 0 auto;
+}
+.form-section-hdr {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 14px; border-radius: var(--radius-sm);
+  margin-bottom: 18px; font-size: 11px; font-weight: 700;
+  letter-spacing: .5px; text-transform: uppercase;
+}
+.fsh-blue    { background: var(--blue-lt);    color: var(--blue-dark); }
+.fsh-amber   { background: var(--amber-lt);   color: var(--amber-dark); }
+.fsh-green   { background: var(--green-lt);   color: var(--green-dark); }
+.fsh-crimson { background: var(--crimson-lt); color: var(--crimson-dark); }
+
+.form-grid { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; margin-bottom: 20px; }
+.form-grid.g1 { grid-template-columns: 1fr; }
+.form-grid.g3 { grid-template-columns: 1fr 1fr 1fr; }
+@media(max-width:620px) { .form-grid, .form-grid.g3 { grid-template-columns: 1fr; } }
+
+.form-field { display: flex; flex-direction: column; gap: 4px; }
+.form-field.span-2 { grid-column: span 2; }
+.form-field label { font-size: 11px; font-weight: 600; color: var(--gray-700); }
+.req { color: var(--red); margin-left: 2px; }
+.form-field input, .form-field select, .form-field textarea {
+  padding: 8px 11px; border: 1px solid var(--gray-300); border-radius: var(--radius-sm);
+  font-size: 13px; color: var(--gray-900); background: var(--white); transition: border-color .12s;
+}
+.form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+  outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(15,108,189,.12);
+}
+.form-field input[readonly] { background: var(--gray-50); color: var(--gray-500); }
+.form-field textarea { resize: vertical; min-height: 78px; }
+.hint { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+.form-divider { height: 1px; background: var(--gray-200); margin: 20px 0; }
+.form-actions {
+  display: flex; gap: 10px; align-items: center; justify-content: flex-end;
+  padding-top: 18px; border-top: 1px solid var(--gray-200);
+}
+.qns-preview {
+  font-family: var(--mono); font-size: 17px; font-weight: 600; color: var(--blue);
+  background: var(--blue-lt); padding: 7px 14px; border-radius: var(--radius-sm);
+  display: inline-block; border: 1px solid rgba(15,108,189,.2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DETAIL VIEW
+═══════════════════════════════════════════════════════════════════ */
+.detail-layout { display: grid; grid-template-columns: 1fr 300px; gap: 18px; max-width: 1060px; margin: 0 auto; }
+@media(max-width:860px) { .detail-layout { grid-template-columns: 1fr; } }
+
+.detail-card {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius); padding: 22px 26px;
+  box-shadow: var(--shadow-sm); margin-bottom: 14px;
+}
+.detail-card:last-child { margin-bottom: 0; }
+
+.dc-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 700; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 16px;
+}
+.dc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+.dr { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.dr:last-child { margin-bottom: 0; }
+.dr-label {
+  font-size: 11px; font-weight: 600; color: var(--gray-400);
+  width: 128px; flex-shrink: 0; padding-top: 2px;
+}
+.dr-value { font-size: 13px; color: var(--gray-800); flex: 1; line-height: 1.5; }
+.dr-value.mono { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--navy); }
+
+/* Edit section */
+.edit-section {
+  border: 2px dashed var(--gray-300); border-radius: var(--radius);
+  padding: 18px 20px; background: var(--gray-50); margin-top: 6px;
+}
+.es-amber  { border-color: var(--amber);   background: #FFFCF0; }
+.es-green  { border-color: var(--green);   background: #F5FCF5; }
+.es-crimson{ border-color: var(--crimson); background: #FDF5F5; }
+
+.es-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+}
+.es-amber   .es-title { color: var(--amber-dark); }
+.es-green   .es-title { color: var(--green-dark); }
+.es-crimson .es-title { color: var(--crimson-dark); }
+.es-blue    .es-title { color: var(--blue-dark); }
+
+/* Sidebar */
+.sidebar-card {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius); padding: 18px 20px;
+  box-shadow: var(--shadow-sm); margin-bottom: 14px;
+}
+.sidebar-card:last-child { margin-bottom: 0; }
+.sb-title {
+  font-size: 11px; font-weight: 700; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 14px;
+}
+.info-chip {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 0; border-bottom: 1px solid var(--gray-100);
+  font-size: 12px; gap: 8px;
+}
+.info-chip:last-child { border-bottom: none; }
+.ic-label { color: var(--gray-400); font-weight: 500; }
+.ic-value { font-weight: 600; color: var(--gray-800); text-align: right; }
+.ic-value.mono { font-family: var(--mono); font-size: 11px; }
+
+/* Timeline */
+.timeline { display: flex; flex-direction: column; }
+.tl-step { display: flex; gap: 10px; position: relative; }
+.tl-step:not(:last-child)::before {
+  content: ''; position: absolute; left: 11px; top: 26px; bottom: -2px;
+  width: 2px; background: var(--gray-200);
+}
+.tl-dot {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid var(--gray-300); background: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; z-index: 1;
+}
+.tl-dot.done   { border-color: var(--green); background: var(--green); color: var(--white); }
+.tl-dot.active { border-color: var(--blue);  background: var(--blue-lt); color: var(--blue); }
+.tl-content { padding-bottom: 14px; }
+.tl-title { font-size: 12px; font-weight: 600; color: var(--gray-800); }
+.tl-meta  { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
+/* Section sep */
+.sec-sep { height: 1px; background: var(--gray-200); margin: 16px -26px 16px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════════════ */
+#toast-area {
+  position: fixed; bottom: 22px; right: 22px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.toast {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 16px; border-radius: var(--radius); border: 1px solid transparent;
+  box-shadow: var(--shadow-lg); max-width: 340px; pointer-events: auto;
+  animation: toastIn .2s ease; font-size: 13px;
+}
+@keyframes toastIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+.toast.t-ok   { background: var(--green-lt); border-color: #A7D5A7; color: var(--green-dark); }
+.toast.t-err  { background: var(--red-lt);   border-color: #F5B0A8; color: var(--red); }
+.toast.t-info { background: var(--blue-lt);  border-color: #90C2EE; color: var(--blue-dark); }
+.toast-icon   { font-size: 15px; flex-shrink: 0; line-height: 1.4; }
+.toast-title  { font-weight: 700; margin-bottom: 1px; }
+.toast-msg    { font-size: 12px; opacity: .85; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   LOADING
+═══════════════════════════════════════════════════════════════════ */
+#loader {
+  position: fixed; inset: 0; background: rgba(13,31,53,.45);
+  display: none; align-items: center; justify-content: center; z-index: 8000;
+}
+#loader.on { display: flex; }
+.loader-spin {
+  width: 40px; height: 40px; border: 3px solid rgba(255,255,255,.2);
+  border-top-color: var(--white); border-radius: 50%;
+  animation: spin .75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ════════════ LOADING ════════════ -->
+<div id="loader"><div class="loader-spin"></div></div>
+<div id="toast-area"></div>
+
+<!-- ════════════ SPLASH ════════════ -->
+<div class="view active" id="view-splash">
+  <div class="splash-logo">QNS</div>
+  <div class="splash-title">Quality Notification System</div>
+  <div class="splash-sub">Vitop USA · SK North America</div>
+  <div id="splash-inner"></div><!-- filled by JS: spinner or demo card -->
+</div>
+
+<!-- ════════════ NAV ════════════ -->
+<nav id="nav" class="hidden">
+  <div class="nav-brand">
+    <div class="nav-logo">QNS</div>
+    <div class="nav-title">Quality Notification System
+      <span>Vitop USA · SK North America</span>
+    </div>
+  </div>
+  <button class="nav-btn nav-btn-primary" onclick="showView('new-nc')">＋ New NC</button>
+  <button class="nav-btn nav-btn-ghost"   onclick="loadAndShow()">↻ Dashboard</button>
+  <div class="nav-sep"></div>
+  <div class="nav-user">
+    <div class="nav-avatar" id="nav-avatar">?</div>
+    <span id="nav-name">—</span>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════════════════════════
+     DASHBOARD
+════════════════════════════════════════════════════════════════ -->
+<div class="view" id="view-dashboard">
+  <div class="view-body"><div class="page-container">
+
+    <div class="page-header">
+      <div class="page-title">Dashboard <small id="refresh-ts"></small></div>
+      <button class="btn btn-ghost btn-sm" onclick="loadAndShow()">↻ Refresh</button>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card k-open">
+        <div class="kpi-icon">⚠</div>
+        <div><div class="kpi-value" id="k-open">—</div><div class="kpi-label">Open NCs</div></div>
+      </div>
+      <div class="kpi-card k-crit">
+        <div class="kpi-icon">🔴</div>
+        <div><div class="kpi-value" id="k-crit">—</div><div class="kpi-label">Critical Open</div></div>
+      </div>
+      <div class="kpi-card k-closed">
+        <div class="kpi-icon">✓</div>
+        <div><div class="kpi-value" id="k-closed">—</div><div class="kpi-label">Closed This Month</div></div>
+      </div>
+      <div class="kpi-card k-avg">
+        <div class="kpi-icon">⏱</div>
+        <div><div class="kpi-value" id="k-avg">—</div><div class="kpi-label">Avg Days Open</div></div>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <input  type="text" id="fs" placeholder="🔍  Search QNS ID, part, issue…" oninput="applyFilters()"/>
+      <select id="ff-status"   onchange="applyFilters()">
+        <option value="">All Statuses</option>
+        <option>Open</option><option>Assigned</option><option>In Progress</option>
+        <option>Corrected</option><option>Closed</option><option>Escalated</option>
+      </select>
+      <select id="ff-crit" onchange="applyFilters()">
+        <option value="">All Criticalities</option>
+        <option>Critical Issue</option><option>Next PM</option><option>End of Run</option>
+      </select>
+      <select id="ff-machine" onchange="applyFilters()">
+        <option value="">All Machines</option>
+      </select>
+      <select id="ff-team" onchange="applyFilters()">
+        <option value="">All Teams</option>
+        <option>Injection Team</option><option>Process Team</option>
+        <option>Mold Team</option><option>Assembly Team</option>
+      </select>
+      <button class="btn-clear" onclick="clearFilters()">✕ Clear</button>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="table-count" id="tbl-count"><strong>—</strong> records</div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th>QNS ID</th><th>Date</th><th>Part</th><th>Machine</th>
+            <th>Issue Reason</th><th>Criticality</th><th>Status</th>
+            <th>Assigned To</th><th>Days Open</th><th></th>
+          </tr></thead>
+          <tbody id="tbl-body">
+            <tr><td colspan="10"><div class="empty-row">
+              <div class="empty-icon">⏳</div><div class="empty-text">Loading…</div>
+            </div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     NEW NC FORM
+════════════════════════════════════════════════════════════════ -->
+<div class="view" id="view-new-nc">
+  <div class="view-body"><div class="page-container">
+    <div class="page-header">
+      <div class="page-title">New Non-Conformance</div>
+      <button class="btn btn-ghost" onclick="showView('dashboard')">← Back</button>
+    </div>
+    <div class="form-card">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Auto-Generated QNS ID</div>
+          <div class="qns-preview" id="new-id-preview">—</div>
+        </div>
+        <div style="text-align:right;font-size:12px;color:var(--gray-500);line-height:1.7;">
+          Created by: <strong id="new-created-by" style="color:var(--gray-700);">—</strong><br/>
+          <span id="new-date" style="font-family:var(--mono);font-size:11px;"></span>
+        </div>
+      </div>
+
+      <div class="form-section-hdr fsh-blue">📋 NC Information — filled by QC Technician</div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Part Name <span class="req">*</span></label>
+          <select id="fn-part">
+            <option value="">— Select —</option>
+            <option>Vitop Body</option><option>Vitop Cap</option><option>Vitop Piston</option>
+            <option>Vitop Valve</option><option>Vitop Tap</option><option>Gland</option>
+            <option>Push Tap</option><option>PT Cap/Button</option><option>PT Body</option><option>PT Stem</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Machine / Press # <span class="req">*</span></label>
+          <select id="fn-machine" onchange="onMachineChange()">
+            <option value="">— Select —</option>
+            <option>IM01</option><option>IM02</option><option>IM03</option><option>IM04</option>
+            <option>IM05</option><option>IM06</option><option>IM07</option><option>IM08</option>
+            <option>IM09</option><option>IM10</option><option>IM11</option><option>IM12</option>
+            <option>IM13</option><option>IM14</option><option>IM15</option>
+            <option>S17</option><option>T18</option><option>P01</option><option>P02</option><option>M11</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Mold Range</label>
+          <input type="text" id="fn-mold" placeholder="Auto-filled from machine #"/>
+          <span class="hint">Adjust if needed</span>
+        </div>
+        <div class="form-field">
+          <label>Cavities Affected <span class="req">*</span></label>
+          <input type="text" id="fn-cavities" placeholder="e.g. 256, 258, 260"/>
+        </div>
+        <div class="form-field">
+          <label>Issue Reason <span class="req">*</span></label>
+          <select id="fn-reason">
+            <option value="">— Select —</option>
+            <option>Coremark</option><option>Flash Closing Internal</option><option>Flash Lower Cylinder</option>
+            <option>Flash Welding Lips</option><option>Flash Pouring Channel</option><option>Flash Injection Line</option>
+            <option>Flash Back Plate</option><option>Flash Hooking</option><option>Flash Thread Stop</option>
+            <option>Thread Position</option><option>Filament</option><option>Bubble</option>
+            <option>Contamination</option><option>Short Shot</option><option>Failed Pin Gate</option>
+            <option>Surface Voids</option><option>High Injection Point</option><option>Flow Line</option>
+            <option>Watermark</option><option>Dent</option><option>Thin Wall</option>
+            <option>Deformed Injection Point</option><option>Cylinder Deformed</option>
+            <option>CMM Failed</option><option>Other (see notes)</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Criticality <span class="req">*</span></label>
+          <select id="fn-crit">
+            <option value="">— Select —</option>
+            <option>Critical Issue</option><option>Next PM</option><option>End of Run</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Closed Cavity?</label>
+          <select id="fn-closed-cav">
+            <option value="No">No</option><option value="Yes">Yes</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Root Cause Type</label>
+          <select id="fn-root">
+            <option value="">— Select —</option>
+            <option>Process</option><option>Mold</option>
+          </select>
+        </div>
+        <div class="form-field span-2">
+          <label>Potential Customer Impact</label>
+          <textarea id="fn-impact" placeholder="Describe potential impact at the customer if any…"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" onclick="showView('dashboard')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitNC()">Submit NC →</button>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     NC DETAIL
+════════════════════════════════════════════════════════════════ -->
+<div class="view" id="view-detail">
+  <div class="view-body"><div class="page-container">
+    <div class="page-header">
+      <div class="page-title" id="d-page-title">NC Detail</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="d-status-badge"></span>
+        <button class="btn btn-ghost btn-sm" onclick="showView('dashboard')">← Dashboard</button>
+      </div>
+    </div>
+
+    <div class="detail-layout">
+      <!-- MAIN -->
+      <div>
+        <!-- NC Info -->
+        <div class="detail-card">
+          <div class="dc-title"><div class="dc-dot" style="background:var(--blue)"></div>NC Information</div>
+          <div class="dr"><div class="dr-label">Part Name</div>      <div class="dr-value" id="d-part">—</div></div>
+          <div class="dr"><div class="dr-label">Machine</div>        <div class="dr-value mono" id="d-machine">—</div></div>
+          <div class="dr"><div class="dr-label">Mold Range</div>     <div class="dr-value" id="d-mold">—</div></div>
+          <div class="dr"><div class="dr-label">Cavities</div>       <div class="dr-value" id="d-cav">—</div></div>
+          <div class="dr"><div class="dr-label">Issue Reason</div>   <div class="dr-value" id="d-reason">—</div></div>
+          <div class="dr"><div class="dr-label">Criticality</div>    <div class="dr-value" id="d-crit">—</div></div>
+          <div class="dr"><div class="dr-label">Closed Cavity</div>  <div class="dr-value" id="d-cav-closed">—</div></div>
+          <div class="dr"><div class="dr-label">Root Cause</div>     <div class="dr-value" id="d-root">—</div></div>
+          <div class="dr"><div class="dr-label">Customer Impact</div><div class="dr-value" id="d-impact">—</div></div>
+          <div class="dr"><div class="dr-label">Created By</div>     <div class="dr-value" id="d-created-by">—</div></div>
+        </div>
+
+        <!-- ROUTING — visible when Open -->
+        <div class="detail-card" id="sec-routing" style="display:none;">
+          <div class="dc-title"><div class="dc-dot" style="background:var(--amber)"></div>Team Lead — Route NC</div>
+          <div class="edit-section es-amber">
+            <div class="es-title">✏ Assign to Team</div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Assign to Team <span class="req">*</span></label>
+                <select id="r-team">
+                  <option value="">— Select —</option>
+                  <option>Injection Team</option><option>Process Team</option>
+                  <option>Mold Team</option><option>Assembly Team</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Assign to Person (optional)</label>
+                <input type="text" id="r-person" placeholder="Name"/>
+              </div>
+            </div>
+            <div class="form-actions" style="border-top:none;padding-top:10px;">
+              <button class="btn btn-amber" onclick="routeNC()">Route NC →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CORRECTION — visible when Assigned / In Progress -->
+        <div class="detail-card" id="sec-correction" style="display:none;">
+          <div class="dc-title"><div class="dc-dot" style="background:var(--green)"></div>Process / Mold Team — Corrective Actions</div>
+          <div id="corr-existing" style="display:none;">
+            <div class="dr"><div class="dr-label">Assigned Team</div>  <div class="dr-value" id="d-assigned-team">—</div></div>
+            <div class="dr"><div class="dr-label">Assigned Person</div><div class="dr-value" id="d-assigned-person">—</div></div>
+            <div class="dr"><div class="dr-label">Actions Logged</div> <div class="dr-value" id="d-actions">—</div></div>
+          </div>
+          <div class="sec-sep" id="corr-sep" style="display:none;"></div>
+          <div class="edit-section es-green">
+            <div class="es-title">✏ Log Correction &amp; Close</div>
+            <div class="form-grid g1">
+              <div class="form-field">
+                <label>Actions Taken to Correct <span class="req">*</span></label>
+                <textarea id="c-actions" placeholder="Describe corrective steps (e.g. polished core, adjusted process, changed insert…)" style="min-height:90px;"></textarea>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Shots Validated <span class="req">*</span></label>
+                <input type="number" id="c-shots" min="0" placeholder="e.g. 10"/>
+              </div>
+              <div class="form-field">
+                <label>Issue Corrected?</label>
+                <select id="c-corrected">
+                  <option value="Yes">Yes — ready for QC review</option>
+                  <option value="No">No — still in progress</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-actions" style="border-top:none;padding-top:10px;">
+              <button class="btn btn-green" onclick="submitCorrection()">Submit Correction →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- VERIFICATION — visible when Corrected -->
+        <div class="detail-card" id="sec-verify" style="display:none;">
+          <div class="dc-title"><div class="dc-dot" style="background:var(--crimson)"></div>Quality Department — Verify &amp; Close</div>
+          <div class="dr"><div class="dr-label">Actions Taken</div>   <div class="dr-value" id="d-actions-qc">—</div></div>
+          <div class="dr"><div class="dr-label">Shots Validated</div> <div class="dr-value mono" id="d-shots-qc">—</div></div>
+          <div class="dr"><div class="dr-label">Corrected By</div>    <div class="dr-value" id="d-corrected-by">—</div></div>
+          <div class="dr"><div class="dr-label">Correction Date</div> <div class="dr-value mono" id="d-corr-date">—</div></div>
+          <div class="sec-sep"></div>
+          <div class="edit-section es-crimson">
+            <div class="es-title">✏ Quality Sign-Off</div>
+            <div class="form-grid g1">
+              <div class="form-field">
+                <label>QC Verification Notes</label>
+                <textarea id="v-notes" placeholder="Any remaining concerns or observations…"></textarea>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Close This NC?</label>
+                <select id="v-close">
+                  <option value="Yes">Yes — fully closed</option>
+                  <option value="No">No — reopen for further action</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-actions" style="border-top:none;padding-top:10px;">
+              <button class="btn btn-crimson" onclick="submitVerification()">Submit QC Sign-Off →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CLOSED SUMMARY -->
+        <div class="detail-card" id="sec-closed" style="display:none;">
+          <div class="dc-title"><div class="dc-dot" style="background:var(--green)"></div>Closed — Summary</div>
+          <div class="dr"><div class="dr-label">Actions Taken</div>   <div class="dr-value" id="d-s-actions">—</div></div>
+          <div class="dr"><div class="dr-label">Shots Validated</div> <div class="dr-value mono" id="d-s-shots">—</div></div>
+          <div class="dr"><div class="dr-label">Corrected By</div>    <div class="dr-value" id="d-s-corrby">—</div></div>
+          <div class="dr"><div class="dr-label">Correction Date</div> <div class="dr-value mono" id="d-s-corrdate">—</div></div>
+          <div class="dr"><div class="dr-label">Assigned Team</div>   <div class="dr-value" id="d-s-team">—</div></div>
+          <div class="dr"><div class="dr-label">QC Notes</div>        <div class="dr-value" id="d-s-qcnotes">—</div></div>
+          <div class="dr"><div class="dr-label">QC Approver</div>     <div class="dr-value" id="d-s-qcapprover">—</div></div>
+          <div class="dr"><div class="dr-label">Date Closed</div>     <div class="dr-value mono" id="d-s-dateclosed">—</div></div>
+        </div>
+      </div><!-- /main -->
+
+      <!-- SIDEBAR -->
+      <div>
+        <div class="sidebar-card">
+          <div class="sb-title">Status Timeline</div>
+          <div class="timeline" id="detail-timeline"></div>
+        </div>
+        <div class="sidebar-card">
+          <div class="sb-title">Key Info</div>
+          <div class="info-chip"><span class="ic-label">QNS ID</span>      <span class="ic-value mono" id="d-sb-id">—</span></div>
+          <div class="info-chip"><span class="ic-label">Date Created</span><span class="ic-value mono" id="d-sb-date">—</span></div>
+          <div class="info-chip"><span class="ic-label">Days Open</span>   <span class="ic-value" id="d-sb-days">—</span></div>
+          <div class="info-chip"><span class="ic-label">Root Cause</span>  <span class="ic-value" id="d-sb-root">—</span></div>
+        </div>
+        <div class="sidebar-card">
+          <div class="sb-title">Quick Actions</div>
+          <div id="sb-actions" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════════ -->
+<script>
+/* ─────────────────────────────────────────────────────────────────
+   ★  CONFIG — only 2 things to set  ★
+   ─────────────────────────────────────────────────────────────────
+   siteUrl  : your SharePoint site URL, e.g.
+              "https://contoso.sharepoint.com/sites/Quality"
+              Leave empty → auto-detected from the page URL.
+   listName : exact name of your SharePoint List.
+   demoMode : true while testing, false when connected to SharePoint.
+────────────────────────────────────────────────────────────────── */
+const CONFIG = {
+  siteUrl:  '',                    // leave empty for auto-detect
+  listName: 'QNS_NonConformance',
+  demoMode: true
+};
+
+/* ── Auto-detect site URL from current page path ── */
+const SITE_URL = CONFIG.siteUrl || (() => {
+  const m = window.location.pathname.match(/^(\/sites\/[^/]+|\/teams\/[^/]+)/);
+  return m ? window.location.origin + m[1] : window.location.origin;
+})();
+
+/* ─────────────────────────────────────────────────────────────────
+   MOLD RANGE MAP
+────────────────────────────────────────────────────────────────── */
+const MOLD_MAP = {
+  IM01:'29-60', IM02:'57-88', IM03:'1F-16F', IM04:'1E-16E', IM05:'1D-16D',
+  IM06:'1-16G', IM07:'249-264', IM08:'153-168', IM09:'129-160', IM10:'121-136',
+  IM11:'1A-32A', IM12:'1B-32B', IM13:'1B-16B', IM14:'1D-32D', IM15:'1C-48C'
+};
+
+/* ─────────────────────────────────────────────────────────────────
+   DEMO DATA
+────────────────────────────────────────────────────────────────── */
+const DEMO = [
+  {id:1,Title:'250102IM13',Status:'Closed',Part_Name:'PT Body',Machine_Number:'IM13',Mold_Range:'1B-16B',Cavities_Affected:'5',Issue_Reason:'Filament',Criticality:'Critical Issue',Assigned_Team:'Injection Team',Root_Cause_Type:'Process',Actions_Taken:'Lower heat zone #5 IM13',Shots_Validated:10,Corrected_By:'Injection Team',Correction_Date:'2025-01-02T12:20:00Z',Is_Closed:'Yes',QC_Notes:'',Quality_Approver:'Tonya Tilicke',Date_Closed:'2025-01-02T14:00:00Z',Created:'2025-01-02T11:45:00Z',Created_By:'Ruby Cedillo',Customer_Impact:'',Closed_Cavity:'No'},
+  {id:2,Title:'250106IM07A',Status:'Closed',Part_Name:'PT Body',Machine_Number:'IM07',Mold_Range:'249-264',Cavities_Affected:'256',Issue_Reason:'Flash Closing Internal',Criticality:'Critical Issue',Assigned_Team:'Mold Team',Root_Cause_Type:'Mold',Actions_Taken:'Repaired cavity — approved by Thibaut',Shots_Validated:5,Corrected_By:'Richard Anaya',Correction_Date:'2025-01-06T14:30:00Z',Is_Closed:'Yes',QC_Notes:'',Quality_Approver:'Tonya Tilicke',Date_Closed:'2025-01-06T16:00:00Z',Created:'2025-01-06T14:40:00Z',Created_By:'Juan Martinez',Customer_Impact:'',Closed_Cavity:'No'},
+  {id:3,Title:'250111IM08',Status:'Closed',Part_Name:'Vitop Body',Machine_Number:'IM08',Mold_Range:'153-168',Cavities_Affected:'163',Issue_Reason:'Flash Closing Internal',Criticality:'Next PM',Assigned_Team:'Injection Team',Root_Cause_Type:'Mold',Actions_Taken:'Tested in machine 10 — passed PM validation',Shots_Validated:15,Corrected_By:'Jose Ramos',Correction_Date:'2025-04-01T12:00:00Z',Is_Closed:'Yes',QC_Notes:'Monitored for 2 weeks post-fix',Quality_Approver:'Tonya Tilicke',Date_Closed:'2025-04-01T15:00:00Z',Created:'2025-01-11T13:30:00Z',Created_By:'Juan Martinez',Customer_Impact:'Possible dimensional defect',Closed_Cavity:'No'},
+  {id:4,Title:'250125IM07',Status:'Assigned',Part_Name:'Vitop Body',Machine_Number:'IM07',Mold_Range:'249-264',Cavities_Affected:'256, 257',Issue_Reason:'Flash Welding Lips',Criticality:'Next PM',Assigned_Team:'Mold Team',Root_Cause_Type:'Mold',Actions_Taken:'',Shots_Validated:null,Corrected_By:'',Correction_Date:null,Is_Closed:'No',QC_Notes:'',Quality_Approver:'',Date_Closed:null,Created:'2025-01-25T13:55:00Z',Created_By:'Juan Martinez',Customer_Impact:'',Closed_Cavity:'Yes'},
+  {id:5,Title:'250408IM08',Status:'Open',Part_Name:'Vitop Body',Machine_Number:'IM08',Mold_Range:'153-168',Cavities_Affected:'161, 165',Issue_Reason:'Coremark',Criticality:'Critical Issue',Assigned_Team:'',Root_Cause_Type:'Mold',Actions_Taken:'',Shots_Validated:null,Corrected_By:'',Correction_Date:null,Is_Closed:'No',QC_Notes:'',Quality_Approver:'',Date_Closed:null,Created:'2025-04-08T09:00:00Z',Created_By:'Ruby Cedillo',Customer_Impact:'Surface finish risk',Closed_Cavity:'No'},
+  {id:6,Title:'250320IM09',Status:'Corrected',Part_Name:'Gland',Machine_Number:'IM09',Mold_Range:'129-160',Cavities_Affected:'132, 140',Issue_Reason:'Flash Back Plate',Criticality:'Critical Issue',Assigned_Team:'Injection Team',Root_Cause_Type:'Process',Actions_Taken:'Adjusted spacer and process parameters',Shots_Validated:20,Corrected_By:'Jose Ramos',Correction_Date:'2025-03-21T15:00:00Z',Is_Closed:'No',QC_Notes:'',Quality_Approver:'',Date_Closed:null,Created:'2025-03-20T09:40:00Z',Created_By:'Juan Martinez',Customer_Impact:'Potential leak',Closed_Cavity:'No'},
+];
+
+/* ─────────────────────────────────────────────────────────────────
+   STATE
+────────────────────────────────────────────────────────────────── */
+let allNCs = [];
+let currentNC = null;
+let currentUser = { name: 'Demo User', initials: 'DU' };
+let formDigest = null;
+let digestExpiry = 0;
+
+/* ─────────────────────────────────────────────────────────────────
+   INIT
+────────────────────────────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', () => {
+  showView('splash');
+  if (CONFIG.demoMode) {
+    renderDemoCard();
+  } else {
+    autoLogin();
+  }
+});
+
+function renderDemoCard() {
+  document.getElementById('splash-inner').innerHTML = `
+    <div class="demo-card">
+      <div class="splash-title" style="font-size:16px;">Demo Mode Active</div>
+      <p>
+        <strong>CONFIG.demoMode = true</strong><br/>
+        The app is running with sample data.<br/>
+        To connect to your SharePoint list, set<br/>
+        <strong>demoMode: false</strong> and fill in <strong>siteUrl</strong>.
+      </p>
+      <button class="btn btn-primary" onclick="enterDemo()" style="margin-top:4px;">
+        Enter Demo →
+      </button>
+    </div>`;
+}
+
+function enterDemo() {
+  currentUser = { name: 'Demo User (QC Tech)', initials: 'DU' };
+  onAuthenticated();
+}
+
+async function autoLogin() {
+  document.getElementById('splash-inner').innerHTML = `
+    <div class="splash-spinner"></div>
+    <div class="splash-status" id="splash-status">Connecting to SharePoint…</div>`;
+  try {
+    setSplashStatus('Loading user profile…');
+    const res = await spGet('web/currentuser');
+    const name = res.Title || res.LoginName || 'Unknown User';
+    currentUser = {
+      name,
+      initials: name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()
+    };
+    setSplashStatus('Fetching form digest…');
+    await refreshDigest();
+    onAuthenticated();
+  } catch(e) {
+    document.getElementById('splash-inner').innerHTML = `
+      <div class="demo-card">
+        <div style="font-size:28px;margin-bottom:10px;">⚠</div>
+        <div class="splash-title" style="font-size:15px;color:#F5B8A0;">Connection Error</div>
+        <p>${e.message || 'Could not connect to SharePoint.'}<br/><br/>
+        Make sure this file is uploaded to your SharePoint site and you are signed in.</p>
+      </div>`;
+  }
+}
+
+function setSplashStatus(msg) {
+  const el = document.getElementById('splash-status');
+  if (el) el.textContent = msg;
+}
+
+function onAuthenticated() {
+  document.getElementById('nav-name').textContent = currentUser.name;
+  document.getElementById('nav-avatar').textContent = currentUser.initials;
+  document.getElementById('nav').classList.remove('hidden');
+  loadAndShow();
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   SHAREPOINT API  — same-origin, session cookie, no MSAL
+────────────────────────────────────────────────────────────────── */
+async function refreshDigest() {
+  const res = await fetch(`${SITE_URL}/_api/contextinfo`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { Accept: 'application/json;odata=nometadata', 'Content-Type': 'application/json' }
+  });
+  if (!res.ok) throw new Error(`Digest fetch failed: ${res.status}`);
+  const data = await res.json();
+  formDigest = data.FormDigestValue;
+  digestExpiry = Date.now() + 25 * 60 * 1000; // 25 min
+}
+
+async function getDigest() {
+  if (!formDigest || Date.now() >= digestExpiry) await refreshDigest();
+  return formDigest;
+}
+
+async function spGet(endpoint) {
+  const res = await fetch(`${SITE_URL}/_api/${endpoint}`, {
+    credentials: 'include',
+    headers: { Accept: 'application/json;odata=nometadata' }
+  });
+  if (!res.ok) throw new Error(`GET /_api/${endpoint} → ${res.status}`);
+  return res.json();
+}
+
+async function spPost(data) {
+  const digest = await getDigest();
+  const res = await fetch(
+    `${SITE_URL}/_api/web/lists/getbytitle('${CONFIG.listName}')/items`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json;odata=nometadata',
+        'Content-Type': 'application/json',
+        'X-RequestDigest': digest
+      },
+      body: JSON.stringify(data)
+    }
+  );
+  if (!res.ok) throw new Error(`POST failed: ${res.status} — ${await res.text()}`);
+  return res.json();
+}
+
+async function spPatch(id, data) {
+  const digest = await getDigest();
+  const res = await fetch(
+    `${SITE_URL}/_api/web/lists/getbytitle('${CONFIG.listName}')/items(${id})`,
+    {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json;odata=nometadata',
+        'Content-Type': 'application/json',
+        'X-RequestDigest': digest,
+        'IF-MATCH': '*'
+      },
+      body: JSON.stringify(data)
+    }
+  );
+  if (!res.ok) throw new Error(`PATCH failed: ${res.status}`);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   LOAD DATA
+────────────────────────────────────────────────────────────────── */
+async function loadAndShow() {
+  load(true);
+  try {
+    if (CONFIG.demoMode) {
+      allNCs = DEMO;
+    } else {
+      const r = await spGet(
+        `web/lists/getbytitle('${CONFIG.listName}')/items` +
+        `?$orderby=Created desc&$top=500`
+      );
+      allNCs = r.value || [];
+    }
+    renderKPIs();
+    populateMachineFilter();
+    applyFilters();
+    document.getElementById('refresh-ts').textContent =
+      `— updated ${new Date().toLocaleTimeString()}`;
+    showView('dashboard');
+  } catch(e) {
+    toast('err', 'Load Error', e.message);
+  }
+  load(false);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   KPIs
+────────────────────────────────────────────────────────────────── */
+function renderKPIs() {
+  const now = new Date();
+  const mo = new Date(now.getFullYear(), now.getMonth(), 1);
+  const open = allNCs.filter(n => n.Status !== 'Closed').length;
+  const crit = allNCs.filter(n => n.Status !== 'Closed' && n.Criticality === 'Critical Issue').length;
+  const closedMo = allNCs.filter(n => n.Status === 'Closed' && new Date(n.Date_Closed||n.Created) >= mo).length;
+  const openList = allNCs.filter(n => n.Status !== 'Closed');
+  const avg = openList.length
+    ? Math.round(openList.reduce((s,n) => s + daysOpen(n), 0) / openList.length)
+    : 0;
+  set('k-open', open);
+  set('k-crit', crit);
+  set('k-closed', closedMo);
+  set('k-avg', avg + 'd');
+}
+
+function daysOpen(nc) {
+  const s = new Date(nc.Created||nc.Date_Created);
+  const e = nc.Status==='Closed' && nc.Date_Closed ? new Date(nc.Date_Closed) : new Date();
+  return Math.max(0, Math.floor((e-s)/86400000));
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   FILTERS & TABLE
+────────────────────────────────────────────────────────────────── */
+function populateMachineFilter() {
+  const sel = document.getElementById('ff-machine');
+  const machines = [...new Set(allNCs.map(n=>n.Machine_Number).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All Machines</option>' +
+    machines.map(m=>`<option>${m}</option>`).join('');
+}
+
+function applyFilters() {
+  const q  = document.getElementById('fs').value.toLowerCase();
+  const st = document.getElementById('ff-status').value;
+  const cr = document.getElementById('ff-crit').value;
+  const ma = document.getElementById('ff-machine').value;
+  const te = document.getElementById('ff-team').value;
+  const filtered = allNCs.filter(nc => {
+    if (q  && !`${nc.Title} ${nc.Part_Name} ${nc.Issue_Reason} ${nc.Cavities_Affected}`.toLowerCase().includes(q)) return false;
+    if (st && nc.Status !== st) return false;
+    if (cr && nc.Criticality !== cr) return false;
+    if (ma && nc.Machine_Number !== ma) return false;
+    if (te && nc.Assigned_Team !== te) return false;
+    return true;
+  });
+  renderTable(filtered);
+  document.getElementById('tbl-count').innerHTML =
+    `<strong>${filtered.length}</strong> of ${allNCs.length} records`;
+}
+
+function clearFilters() {
+  ['fs','ff-status','ff-crit','ff-machine','ff-team'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  applyFilters();
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('tbl-body');
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-row">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-text">No NCs match your filters.</div>
+    </div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(nc => {
+    const d = daysOpen(nc);
+    const chip = nc.Status==='Closed' ? `<span class="days-chip d-ok">${d}d</span>`
+      : d>7 ? `<span class="days-chip d-late">${d}d ⚠</span>`
+      : d>2 ? `<span class="days-chip d-warn">${d}d</span>`
+      :        `<span class="days-chip d-ok">${d}d</span>`;
+    return `<tr onclick="openDetail(${nc.id})">
+      <td class="mono">${nc.Title||'—'}</td>
+      <td>${fmtDate(nc.Created)}</td>
+      <td>${nc.Part_Name||'—'}</td>
+      <td class="mono">${nc.Machine_Number||'—'}</td>
+      <td>${nc.Issue_Reason||'—'}</td>
+      <td>${critBadge(nc.Criticality)}</td>
+      <td>${statusBadge(nc.Status)}</td>
+      <td style="font-size:12px;">${nc.Assigned_Team||'<span style="color:var(--gray-400)">—</span>'}</td>
+      <td>${chip}</td>
+      <td><button class="btn btn-ghost btn-sm"
+            onclick="event.stopPropagation();openDetail(${nc.id})">View →</button></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   NEW NC FORM
+────────────────────────────────────────────────────────────────── */
+function initNewForm() {
+  const now = new Date();
+  set('new-created-by', currentUser.name);
+  set('new-date', now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+    + ' ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+  updateQNSPreview();
+}
+
+function onMachineChange() {
+  const m = document.getElementById('fn-machine').value;
+  document.getElementById('fn-mold').value = MOLD_MAP[m] || '';
+  updateQNSPreview();
+}
+
+function updateQNSPreview() {
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(2);
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const dd = String(now.getDate()).padStart(2,'0');
+  const machine = document.getElementById('fn-machine').value || 'IMXX';
+  document.getElementById('new-id-preview').textContent = `${yy}${mm}${dd}${machine}`;
+}
+
+async function submitNC() {
+  const part     = document.getElementById('fn-part').value;
+  const machine  = document.getElementById('fn-machine').value;
+  const cavities = document.getElementById('fn-cavities').value.trim();
+  const reason   = document.getElementById('fn-reason').value;
+  const crit     = document.getElementById('fn-crit').value;
+  if (!part||!machine||!cavities||!reason||!crit) {
+    toast('err','Missing Fields','Please fill all required fields (★) before submitting.');
+    return;
+  }
+  const now = new Date();
+  const yy  = String(now.getFullYear()).slice(2);
+  const mm  = String(now.getMonth()+1).padStart(2,'0');
+  const dd  = String(now.getDate()).padStart(2,'0');
+  const qnsId = `${yy}${mm}${dd}${machine}`;
+  const payload = {
+    Title:            qnsId,
+    Status:           'Open',
+    Part_Name:        part,
+    Machine_Number:   machine,
+    Mold_Range:       document.getElementById('fn-mold').value,
+    Cavities_Affected:cavities,
+    Issue_Reason:     reason,
+    Criticality:      crit,
+    Closed_Cavity:    document.getElementById('fn-closed-cav').value,
+    Root_Cause_Type:  document.getElementById('fn-root').value,
+    Customer_Impact:  document.getElementById('fn-impact').value,
+    Created_By:       currentUser.name
+  };
+  load(true);
+  try {
+    if (CONFIG.demoMode) {
+      allNCs.unshift({ ...payload, id: Date.now(), Created: now.toISOString() });
+      toast('ok','NC Submitted', `${qnsId} created (demo mode)`);
+    } else {
+      await spPost(payload);
+      toast('ok','NC Submitted', `${qnsId} logged — Team Lead has been notified.`);
+    }
+    // reset form
+    ['fn-part','fn-machine','fn-mold','fn-cavities','fn-reason','fn-crit','fn-root','fn-impact'].forEach(id=>{
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('fn-closed-cav').value = 'No';
+    await loadAndShow();
+  } catch(e) {
+    toast('err','Submit Failed', e.message);
+    load(false);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   DETAIL
+────────────────────────────────────────────────────────────────── */
+function openDetail(id) {
+  currentNC = allNCs.find(n => n.id === id);
+  if (!currentNC) return;
+  renderDetail(currentNC);
+  showView('detail');
+}
+
+function renderDetail(nc) {
+  const s = nc.Status;
+  set('d-page-title', nc.Title);
+  document.getElementById('d-status-badge').innerHTML = statusBadge(s);
+
+  // Info panel
+  set('d-part',        nc.Part_Name);
+  setMono('d-machine', nc.Machine_Number);
+  set('d-mold',        nc.Mold_Range);
+  set('d-cav',         nc.Cavities_Affected);
+  set('d-reason',      nc.Issue_Reason);
+  document.getElementById('d-crit').innerHTML = critBadge(nc.Criticality);
+  set('d-cav-closed',  nc.Closed_Cavity||'No');
+  set('d-root',        nc.Root_Cause_Type||'—');
+  set('d-impact',      nc.Customer_Impact||'—');
+  set('d-created-by',  nc.Created_By||'—');
+
+  // Sidebar
+  setMono('d-sb-id',   nc.Title);
+  setMono('d-sb-date', fmtDate(nc.Created));
+  document.getElementById('d-sb-days').innerHTML = daysChip(nc);
+  set('d-sb-root',     nc.Root_Cause_Type||'—');
+
+  // Section visibility
+  vis('sec-routing',   s === 'Open');
+  vis('sec-correction',s === 'Assigned' || s === 'In Progress');
+  vis('sec-verify',    s === 'Corrected');
+  vis('sec-closed',    s === 'Closed');
+
+  // Correction: show existing data if re-editing
+  if (s === 'Assigned' || s === 'In Progress') {
+    const has = !!nc.Actions_Taken;
+    vis('corr-existing', has);
+    vis('corr-sep',      has);
+    if (has) {
+      set('d-assigned-team',   nc.Assigned_Team||'—');
+      set('d-assigned-person', nc.Assigned_Person||'—');
+      set('d-actions',         nc.Actions_Taken);
+    }
+  }
+
+  // Verification panel
+  if (s === 'Corrected') {
+    set('d-actions-qc',  nc.Actions_Taken||'—');
+    setMono('d-shots-qc',nc.Shots_Validated != null ? nc.Shots_Validated : '—');
+    set('d-corrected-by',nc.Corrected_By||'—');
+    setMono('d-corr-date',fmtDate(nc.Correction_Date));
+  }
+
+  // Closed summary
+  if (s === 'Closed') {
+    set('d-s-actions',    nc.Actions_Taken||'—');
+    setMono('d-s-shots',  nc.Shots_Validated != null ? nc.Shots_Validated : '—');
+    set('d-s-corrby',     nc.Corrected_By||'—');
+    setMono('d-s-corrdate',fmtDate(nc.Correction_Date));
+    set('d-s-team',       nc.Assigned_Team||'—');
+    set('d-s-qcnotes',    nc.QC_Notes||'—');
+    set('d-s-qcapprover', nc.Quality_Approver||'—');
+    setMono('d-s-dateclosed',fmtDate(nc.Date_Closed));
+  }
+
+  buildTimeline(nc);
+  buildSidebarActions(nc);
+}
+
+function buildTimeline(nc) {
+  const order = ['Open','Assigned','In Progress','Corrected','Closed'];
+  const si = order.indexOf(nc.Status);
+  const steps = [
+    { label:'NC Created',              meta: `${fmtDate(nc.Created)}${nc.Created_By?' · '+nc.Created_By:''}` },
+    { label:'Routed by Team Lead',     meta: nc.Assigned_Team ? '→ '+nc.Assigned_Team : '' },
+    { label:'Investigation In Progress',meta: '' },
+    { label:'Correction Submitted',    meta: nc.Corrected_By ? '· '+nc.Corrected_By : '' },
+    { label:'Closed by Quality',       meta: nc.Quality_Approver ? '· '+nc.Quality_Approver : '' },
+  ];
+  document.getElementById('detail-timeline').innerHTML = steps.map((step,i) => {
+    const done   = i < si;
+    const active = i === si;
+    return `<div class="tl-step">
+      <div class="tl-dot ${done?'done':active?'active':''}">${done?'✓':i+1}</div>
+      <div class="tl-content">
+        <div class="tl-title" style="color:${done||active?'var(--gray-900)':'var(--gray-400)'}">${step.label}</div>
+        ${step.meta?`<div class="tl-meta">${step.meta}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildSidebarActions(nc) {
+  const s = nc.Status;
+  let html = '';
+  if (s === 'Open')
+    html += `<button class="btn btn-amber" onclick="scrollTo('#sec-routing')">Route NC →</button>`;
+  if (s === 'Assigned' || s === 'In Progress')
+    html += `<button class="btn btn-green" onclick="scrollTo('#sec-correction')">Log Correction →</button>`;
+  if (s === 'Corrected')
+    html += `<button class="btn btn-crimson" onclick="scrollTo('#sec-verify')">QC Sign-Off →</button>`;
+  if (s !== 'Closed')
+    html += `<button class="btn btn-danger btn-sm" onclick="escalateNC()">⚑ Escalate</button>`;
+  html += `<button class="btn btn-ghost btn-sm" onclick="showView('dashboard')">← Dashboard</button>`;
+  document.getElementById('sb-actions').innerHTML = html;
+}
+
+function scrollTo(sel) {
+  const el = document.querySelector(sel);
+  if (el) el.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   NC ACTIONS
+────────────────────────────────────────────────────────────────── */
+async function routeNC() {
+  const team = document.getElementById('r-team').value;
+  if (!team) { toast('err','Required','Select a team first.'); return; }
+  await saveUpdate(
+    { Status:'Assigned', Assigned_Team:team, Assigned_Person:document.getElementById('r-person').value, Routing_Date:new Date().toISOString() },
+    'NC Routed', `Assigned to ${team}`
+  );
+}
+
+async function submitCorrection() {
+  const actions = document.getElementById('c-actions').value.trim();
+  const shots   = document.getElementById('c-shots').value;
+  const corrected = document.getElementById('c-corrected').value;
+  if (!actions) { toast('err','Required','Describe the corrective actions taken.'); return; }
+  if (!shots)   { toast('err','Required','Enter the number of shots validated.'); return; }
+  await saveUpdate(
+    { Status: corrected==='Yes'?'Corrected':'In Progress', Actions_Taken:actions,
+      Shots_Validated:parseInt(shots), Corrected_By:currentUser.name,
+      Correction_Date:new Date().toISOString(), Issue_Corrected:corrected },
+    'Correction Submitted',
+    corrected==='Yes' ? 'Sent to Quality for review.' : 'NC marked In Progress.'
+  );
+}
+
+async function submitVerification() {
+  const close = document.getElementById('v-close').value;
+  await saveUpdate(
+    { Status:close==='Yes'?'Closed':'Assigned', Is_Closed:close,
+      QC_Notes:document.getElementById('v-notes').value,
+      Quality_Approver:currentUser.name,
+      Date_Closed:close==='Yes'?new Date().toISOString():null },
+    'QC Sign-Off Complete',
+    close==='Yes' ? 'NC is now closed.' : 'NC reopened and re-assigned.'
+  );
+}
+
+async function escalateNC() {
+  if (!confirm('Escalate this NC? The supervisor will be notified.')) return;
+  await saveUpdate({ Status:'Escalated' }, 'NC Escalated', 'Supervisor notified.');
+}
+
+async function saveUpdate(patch, title, msg) {
+  load(true);
+  try {
+    if (CONFIG.demoMode) {
+      Object.assign(currentNC, patch);
+    } else {
+      await spPatch(currentNC.id, patch);
+      Object.assign(currentNC, patch);
+    }
+    renderDetail(currentNC);
+    toast('ok', title, msg);
+  } catch(e) {
+    toast('err','Save Failed', e.message);
+  }
+  load(false);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   ROUTER
+────────────────────────────────────────────────────────────────── */
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+  if (name === 'new-nc') initNewForm();
+  if (name !== 'splash' && name !== 'dashboard') window.scrollTo(0,0);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   BADGE HELPERS
+────────────────────────────────────────────────────────────────── */
+function statusBadge(s) {
+  const map = {
+    'Open':'b-open','Assigned':'b-assigned','In Progress':'b-progress',
+    'Corrected':'b-corrected','Closed':'b-closed','Escalated':'b-escalated'
+  };
+  return `<span class="badge ${map[s]||'b-open'}"><span class="badge-dot"></span>${s||'Open'}</span>`;
+}
+function critBadge(c) {
+  const map = {'Critical Issue':'c-critical','Next PM':'c-nextpm','End of Run':'c-endrun'};
+  return `<span class="badge ${map[c]||'c-endrun'}"><span class="badge-dot"></span>${c||'—'}</span>`;
+}
+function daysChip(nc) {
+  const d = daysOpen(nc);
+  const cls = nc.Status==='Closed'?'d-ok':d>7?'d-late':d>2?'d-warn':'d-ok';
+  return `<span class="days-chip ${cls}">${d}d${nc.Status!=='Closed'&&d>7?' ⚠':''}</span>`;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   DOM HELPERS
+────────────────────────────────────────────────────────────────── */
+function set(id,v)     { const el=document.getElementById(id); if(el) el.textContent = v??'—'; }
+function setMono(id,v) { const el=document.getElementById(id); if(el){el.textContent=v??'—';el.classList.add('mono');}}
+function vis(id,show)  { const el=document.getElementById(id); if(el) el.style.display=show?'':'none'; }
+function load(on)      { document.getElementById('loader').classList.toggle('on',on); }
+function fmtDate(d) {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+  catch { return '—'; }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   TOAST
+────────────────────────────────────────────────────────────────── */
+function toast(type, title, msg='') {
+  const icons = { ok:'✓', err:'✕', info:'ℹ' };
+  const cls   = { ok:'t-ok', err:'t-err', info:'t-info' };
+  const el = document.createElement('div');
+  el.className = `toast ${cls[type]||'t-info'}`;
+  el.innerHTML = `<div class="toast-icon">${icons[type]||'ℹ'}</div>
+    <div><div class="toast-title">${title}</div>${msg?`<div class="toast-msg">${msg}</div>`:''}</div>`;
+  document.getElementById('toast-area').appendChild(el);
+  setTimeout(() => el.remove(), 4500);
+}
+</script>
+</body>
+</html>
