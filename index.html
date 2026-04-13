@@ -2,1471 +2,1561 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>QNS — Quality Notification System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>QNS — Quality Notification System | Smurfit Westrock</title>
 <style>
-/* ═══════════════════════════════════════════════════════════════════
-   FONTS  — no external CDN needed, works inside SharePoint CSP
-   Segoe UI Variable = Windows 11 · Segoe UI = Windows 10 fallback
-   Cascadia Code = modern Windows mono · Consolas = classic fallback
-═══════════════════════════════════════════════════════════════════ */
 :root {
-  --font: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
-  --mono: 'Cascadia Code', 'Cascadia Mono', 'Consolas', monospace;
+  --sw-navy:#00305E; --sw-blue:#0066A1; --sw-blue-lt:#D6E8F5;
+  --sw-red:#E8311A;  --sw-red-lt:#FDE8E5;
+  --white:#FFFFFF;
+  --gray-50:#F4F7FA; --gray-100:#E8EDF3; --gray-200:#D1DAE5;
+  --gray-300:#A8B8C8; --gray-400:#7A90A4; --gray-500:#546070;
+  --gray-700:#2E3D4D; --gray-900:#0D1E2D;
+  --green:#1A7A1A; --green-lt:#E5F5E5;
+  --amber:#B87800; --amber-lt:#FFF3D6;
+  --crimson:#9A1C22; --crimson-lt:#FAE8E9;
+  --nav-h:60px; --radius:10px; --radius-sm:6px; --radius-lg:14px;
+  --shadow-sm:0 1px 4px rgba(0,48,94,.08);
+  --shadow:0 3px 10px rgba(0,48,94,.10);
+  --shadow-lg:0 8px 28px rgba(0,48,94,.13);
+  --font:'Segoe UI Variable','Segoe UI',system-ui,sans-serif;
+  --mono:'Cascadia Code','Consolas',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;-webkit-text-size-adjust:100%;}
+body{font-family:var(--font);background:var(--gray-50);color:var(--gray-900);min-height:100vh;-webkit-font-smoothing:antialiased;}
+button{cursor:pointer;font-family:var(--font);}
+input,select,textarea{font-family:var(--font);}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:3px;}
 
-  /* ── Palette ── */
-  --navy:       #0D1F35;
-  --navy-mid:   #1A3150;
-  --navy-lite:  #254670;
-  --blue:       #0F6CBD;   /* Microsoft Fluent blue */
-  --blue-lt:    #D6E8FA;
-  --blue-dark:  #0D5CA6;
-  --amber:      #C4901A;
-  --amber-lt:   #FEF3D6;
-  --amber-dark: #A67C15;
-  --green:      #107C10;   /* Microsoft green */
-  --green-lt:   #DFF0DF;
-  --green-dark: #0D6A0D;
-  --crimson:    #A4262C;
-  --crimson-lt: #F9E8E8;
-  --crimson-dark:#8A1F24;
-  --red:        #C50F1F;
-  --red-lt:     #FDDED8;
-  --gray-50:    #F8F9FA;
-  --gray-100:   #F0F2F5;
-  --gray-200:   #E1E5EA;
-  --gray-300:   #C8CDD5;
-  --gray-400:   #8A919C;
-  --gray-500:   #5E6470;
-  --gray-700:   #2E3340;
-  --gray-900:   #111318;
-  --white:      #FFFFFF;
+/* NAV */
+#nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sw-navy);display:flex;align-items:center;padding:0 20px;gap:12px;z-index:200;box-shadow:0 2px 10px rgba(0,0,0,.3);}
+#nav.hidden{display:none;}
+.nav-brand{display:flex;align-items:center;gap:10px;margin-right:auto;}
+.nav-vdiv{width:1px;height:30px;background:rgba(255,255,255,.2);}
+.nav-app-name{color:var(--white);font-weight:700;font-size:15px;}
+.nav-app-name span{font-weight:400;color:rgba(255,255,255,.5);font-size:12px;margin-left:6px;}
+.nav-btn{padding:7px 14px;border-radius:var(--radius-sm);border:none;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .14s;white-space:nowrap;}
+.nb-ghost{background:rgba(255,255,255,.1);color:var(--white);}
+.nb-ghost:hover{background:rgba(255,255,255,.2);}
+.nb-red{background:rgba(232,49,26,.3);color:var(--white);}
+.nb-red:hover{background:rgba(232,49,26,.5);}
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.05);
-  --shadow:    0 3px 8px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.06);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,.10), 0 3px 8px rgba(0,0,0,.06);
-  --radius:    8px;
-  --radius-sm: 5px;
-  --radius-lg: 12px;
-  --nav-h:     56px;
-}
+/* VIEWS */
+.view{display:none;}
+.view.active{display:block;}
+#view-splash{position:fixed;inset:0;background:var(--sw-navy);display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:9999;}
+#view-splash.active{display:flex;}
+.view-body{padding-top:calc(var(--nav-h)+22px);padding-bottom:56px;}
+.pw{max-width:1180px;margin:0 auto;padding:0 20px;}
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 14px; }
-body {
-  font-family: var(--font);
-  background: var(--gray-100);
-  color: var(--gray-900);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
-button { cursor: pointer; font-family: var(--font); }
-input, select, textarea { font-family: var(--font); }
+/* SPLASH */
+.sp-logo{width:70px;height:70px;background:var(--sw-blue);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--white);box-shadow:0 0 40px rgba(0,102,161,.4);}
+.sp-title{color:var(--white);font-size:22px;font-weight:700;}
+.sp-sub{color:rgba(255,255,255,.4);font-size:13px;}
+.sp-spin{width:34px;height:34px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--sw-blue);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+/* LAYOUT */
+.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
+.page-title{font-size:20px;font-weight:700;color:var(--sw-navy);}
+.page-title small{font-size:12px;font-weight:400;color:var(--gray-400);margin-left:8px;}
 
-/* ═══════════════════════════════════════════════════════════════════
-   NAV
-═══════════════════════════════════════════════════════════════════ */
-#nav {
-  position: fixed; top: 0; left: 0; right: 0;
-  height: var(--nav-h); background: var(--navy);
-  display: flex; align-items: center; padding: 0 20px; gap: 12px;
-  z-index: 100; box-shadow: 0 1px 0 var(--navy-mid), 0 2px 8px rgba(0,0,0,.25);
-}
-#nav.hidden { display: none; }
+/* CTA BANNER */
+.cta-banner{background:linear-gradient(135deg,var(--sw-red) 0%,#B82510 100%);border-radius:var(--radius-lg);padding:26px 30px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;box-shadow:var(--shadow-lg);}
+.cta-txt h2{color:var(--white);font-size:20px;font-weight:800;margin-bottom:3px;}
+.cta-txt p{color:rgba(255,255,255,.75);font-size:13px;}
+.cta-action{background:var(--white);color:var(--sw-red);border:none;border-radius:var(--radius);padding:14px 28px;font-size:17px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(0,0,0,.2);transition:all .15s;white-space:nowrap;}
+.cta-action:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.25);}
+@media(max-width:580px){.cta-banner{flex-direction:column;text-align:center;}.cta-action{width:100%;justify-content:center;font-size:19px;padding:16px;}}
 
-.nav-brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
-.nav-logo {
-  width: 32px; height: 32px; background: var(--blue); border-radius: var(--radius-sm);
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 13px; color: var(--white); letter-spacing: -.3px;
-}
-.nav-title { color: var(--white); font-weight: 600; font-size: 15px; letter-spacing: -.1px; }
-.nav-title span { color: var(--gray-400); font-weight: 400; font-size: 12px; margin-left: 8px; }
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+@media(max-width:780px){.kpi-row{grid-template-columns:1fr 1fr;}}
+.kpi{background:var(--white);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm);border:1px solid var(--gray-100);display:flex;align-items:center;gap:12px;}
+.kpi-icon{width:44px;height:44px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+.kpi-val{font-size:26px;font-weight:800;color:var(--sw-navy);line-height:1;font-variant-numeric:tabular-nums;}
+.kpi-lbl{font-size:10px;color:var(--gray-400);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.k-open .kpi-icon{background:var(--sw-blue-lt);color:var(--sw-blue);}
+.k-crit .kpi-icon{background:var(--sw-red-lt);color:var(--sw-red);}
+.k-done .kpi-icon{background:var(--green-lt);color:var(--green);}
+.k-avg  .kpi-icon{background:var(--amber-lt);color:var(--amber);}
 
-.nav-btn {
-  padding: 6px 14px; border-radius: var(--radius-sm); border: none;
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  transition: background .12s, opacity .12s;
-  display: flex; align-items: center; gap: 6px;
-}
-.nav-btn-primary { background: var(--blue); color: var(--white); }
-.nav-btn-primary:hover { background: var(--blue-dark); }
-.nav-btn-ghost { background: transparent; color: var(--gray-300); border: 1px solid var(--navy-lite); }
-.nav-btn-ghost:hover { background: var(--navy-lite); color: var(--white); }
-.nav-sep { width: 1px; height: 26px; background: var(--navy-lite); }
-.nav-user { color: var(--gray-300); font-size: 12px; display: flex; align-items: center; gap: 8px; }
-.nav-avatar {
-  width: 28px; height: 28px; background: var(--blue); border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--white); font-weight: 700; font-size: 11px;
-}
+/* FILTER BAR */
+.filter-bar{background:var(--white);border:1px solid var(--gray-100);border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;box-shadow:var(--shadow-sm);}
+.filter-bar input,.filter-bar select{padding:8px 11px;border:1px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;color:var(--gray-700);background:var(--gray-50);transition:border-color .12s;}
+.filter-bar input{flex:1;min-width:180px;}
+.filter-bar select{min-width:125px;}
+.filter-bar input:focus,.filter-bar select:focus{outline:none;border-color:var(--sw-blue);box-shadow:0 0 0 3px rgba(0,102,161,.1);}
+.btn-clr{padding:8px 12px;border:1px solid var(--gray-200);background:transparent;border-radius:var(--radius-sm);font-size:12px;color:var(--gray-400);cursor:pointer;}
+.btn-clr:hover{background:var(--gray-50);color:var(--gray-700);}
 
-/* ═══════════════════════════════════════════════════════════════════
-   SPLASH / LOGIN
-═══════════════════════════════════════════════════════════════════ */
-#view-splash {
-  position: fixed; inset: 0;
-  background: var(--navy);
-  display: none; flex-direction: column;
-  align-items: center; justify-content: center; gap: 24px;
-  z-index: 9999;
-}
-#view-splash.active { display: flex; }
+/* TABLE */
+.tbl-card{background:var(--white);border:1px solid var(--gray-100);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;}
+.tbl-bar{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--gray-100);}
+.tbl-count{font-size:12px;color:var(--gray-400);}
+.tbl-count strong{color:var(--gray-900);}
+table{width:100%;border-collapse:collapse;}
+thead th{background:var(--gray-50);padding:9px 13px;text-align:left;font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--gray-100);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--gray-50);cursor:pointer;transition:background .08s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#F0F5FA;}
+tbody td{padding:11px 13px;font-size:13px;color:var(--gray-700);vertical-align:middle;}
+td.mono{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--sw-navy);}
+.empty-st{text-align:center;padding:52px 24px;}
+.e-icon{font-size:34px;margin-bottom:8px;}
+.e-txt{color:var(--gray-400);font-size:13px;}
 
-.splash-logo {
-  width: 72px; height: 72px; background: var(--blue); border-radius: 16px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 26px; font-weight: 700; color: var(--white); letter-spacing: -1px;
-  box-shadow: 0 0 40px rgba(15,108,189,.4);
-}
-.splash-title { color: var(--white); font-size: 22px; font-weight: 700; text-align: center; }
-.splash-sub { color: var(--gray-400); font-size: 13px; text-align: center; max-width: 340px; line-height: 1.6; }
-.splash-spinner {
-  width: 36px; height: 36px; border: 3px solid rgba(255,255,255,.15);
-  border-top-color: var(--blue); border-radius: 50%;
-  animation: spin .7s linear infinite;
-}
-.splash-status { color: var(--gray-500); font-size: 12px; font-family: var(--mono); }
+/* WIZARD */
+.wiz-wrap{max-width:660px;margin:0 auto;}
+.wiz-progress{background:var(--white);border-radius:var(--radius-lg);padding:20px 26px;margin-bottom:18px;box-shadow:var(--shadow-sm);border:1px solid var(--gray-100);}
+.ps-row{display:flex;align-items:center;margin-bottom:12px;}
+.ps-step{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;}
+.ps-step:not(:last-child)::after{content:'';position:absolute;top:15px;left:calc(50% + 16px);right:calc(-50% + 16px);height:2px;background:var(--gray-200);z-index:0;}
+.ps-step.done::after{background:var(--sw-blue);}
+.ps-dot{width:30px;height:30px;border-radius:50%;border:2px solid var(--gray-300);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--gray-400);z-index:1;transition:all .2s;}
+.ps-step.active .ps-dot{border-color:var(--sw-blue);background:var(--sw-blue);color:var(--white);}
+.ps-step.done .ps-dot{border-color:var(--sw-blue);background:var(--sw-blue);color:var(--white);}
+.ps-lbl{font-size:10px;font-weight:600;color:var(--gray-400);text-align:center;text-transform:uppercase;letter-spacing:.3px;}
+.ps-step.active .ps-lbl,.ps-step.done .ps-lbl{color:var(--sw-blue);}
+.pb-track{height:4px;background:var(--gray-100);border-radius:2px;overflow:hidden;}
+.pb-fill{height:100%;background:var(--sw-blue);border-radius:2px;transition:width .3s ease;}
 
-/* Demo mode card */
-.demo-card {
-  background: var(--navy-mid); border: 1px solid var(--navy-lite);
-  border-radius: var(--radius-lg); padding: 28px 36px;
-  text-align: center; max-width: 380px; width: 90%;
-}
-.demo-card p { color: var(--gray-400); font-size: 12px; line-height: 1.7; margin: 14px 0; }
-.demo-card strong { color: var(--gray-300); }
+.wiz-card{background:var(--white);border-radius:var(--radius-lg);box-shadow:var(--shadow);border:1px solid var(--gray-100);overflow:hidden;}
+.wiz-step{display:none;}
+.wiz-step.active{display:block;}
+.wiz-hdr{padding:22px 26px 18px;border-bottom:1px solid var(--gray-100);}
+.step-num{font-size:11px;font-weight:700;color:var(--sw-blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.step-title{font-size:19px;font-weight:800;color:var(--sw-navy);margin-bottom:3px;}
+.step-sub{font-size:13px;color:var(--gray-400);}
+.wiz-body{padding:22px 26px;}
 
-/* ═══════════════════════════════════════════════════════════════════
-   VIEWS
-═══════════════════════════════════════════════════════════════════ */
-.view { display: none; min-height: 100vh; }
-.view.active { display: block; }
-.view-body { padding-top: calc(var(--nav-h) + 22px); padding-bottom: 48px; }
-.page-container { max-width: 1260px; margin: 0 auto; padding: 0 22px; }
-.page-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 22px; flex-wrap: wrap; gap: 12px;
-}
-.page-title { font-size: 20px; font-weight: 700; color: var(--navy); letter-spacing: -.2px; }
-.page-title small { font-size: 12px; font-weight: 400; color: var(--gray-400); margin-left: 8px; }
+/* Reporter grid */
+.rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;max-height:300px;overflow-y:auto;padding-right:2px;}
+@media(max-width:480px){.rep-grid{grid-template-columns:1fr;}}
+.rep-btn{padding:12px 14px;border:2px solid var(--gray-200);border-radius:var(--radius);background:var(--white);text-align:left;cursor:pointer;transition:all .14s;font-size:13px;font-weight:600;color:var(--gray-700);display:flex;align-items:center;gap:10px;}
+.rep-btn:hover{border-color:var(--sw-blue);color:var(--sw-blue);background:var(--sw-blue-lt);}
+.rep-btn.sel{border-color:var(--sw-blue);background:var(--sw-blue);color:var(--white);}
+.rep-av{width:32px;height:32px;border-radius:50%;background:var(--sw-blue-lt);color:var(--sw-blue);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rep-btn.sel .rep-av{background:rgba(255,255,255,.2);color:var(--white);}
 
-/* ═══════════════════════════════════════════════════════════════════
-   KPI CARDS
-═══════════════════════════════════════════════════════════════════ */
-.kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
-@media(max-width:880px){ .kpi-grid { grid-template-columns: repeat(2,1fr); } }
-@media(max-width:480px){ .kpi-grid { grid-template-columns: 1fr; } }
+/* Form fields */
+.fg{display:grid;gap:14px;grid-template-columns:1fr 1fr;margin-bottom:4px;}
+.fg.g1{grid-template-columns:1fr;}
+.fg .s2{grid-column:span 2;}
+@media(max-width:520px){.fg,.fg .s2{grid-template-columns:1fr;grid-column:span 1;}}
+.ff{display:flex;flex-direction:column;gap:5px;}
+.ff label{font-size:12px;font-weight:700;color:var(--gray-700);}
+.req{color:var(--sw-red);}
+.ff input,.ff select,.ff textarea{padding:11px 13px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:14px;color:var(--gray-900);background:var(--white);transition:border-color .12s;}
+.ff input:focus,.ff select:focus,.ff textarea:focus{outline:none;border-color:var(--sw-blue);box-shadow:0 0 0 3px rgba(0,102,161,.1);}
+.ff textarea{resize:vertical;min-height:85px;}
+.hint{font-size:11px;color:var(--gray-400);}
+.ff input[readonly]{background:var(--gray-50);color:var(--gray-500);}
 
-.kpi-card {
-  background: var(--white); border-radius: var(--radius);
-  padding: 18px 20px; box-shadow: var(--shadow-sm);
-  border: 1px solid var(--gray-200);
-  display: flex; align-items: center; gap: 14px;
-  transition: box-shadow .15s, transform .15s;
-}
-.kpi-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
-.kpi-icon {
-  width: 42px; height: 42px; border-radius: var(--radius-sm);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px; flex-shrink: 0;
-}
-.kpi-value { font-size: 26px; font-weight: 700; color: var(--navy); line-height: 1; font-variant-numeric: tabular-nums; }
-.kpi-label { font-size: 11px; color: var(--gray-500); margin-top: 3px; font-weight: 500; text-transform: uppercase; letter-spacing: .4px; }
+/* Criticality big select */
+.crit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+@media(max-width:460px){.crit-grid{grid-template-columns:1fr;}}
+.crit-btn{padding:16px 10px;border:2px solid var(--gray-200);border-radius:var(--radius);background:var(--white);cursor:pointer;transition:all .14s;text-align:center;}
+.c-icon{font-size:26px;margin-bottom:5px;}
+.c-lbl{font-size:13px;font-weight:700;color:var(--gray-700);display:block;}
+.c-desc{font-size:11px;color:var(--gray-400);margin-top:3px;display:block;line-height:1.4;}
+.crit-btn:hover{border-color:var(--sw-blue);}
+.cb-crit{border-color:var(--sw-red)!important;background:var(--sw-red-lt)!important;}
+.cb-crit .c-lbl{color:var(--sw-red)!important;}
+.cb-next{border-color:var(--amber)!important;background:var(--amber-lt)!important;}
+.cb-next .c-lbl{color:var(--amber)!important;}
+.cb-end{border-color:var(--gray-400)!important;background:var(--gray-50)!important;}
+.cb-end .c-lbl{color:var(--gray-500)!important;}
 
-.kpi-card.k-open   .kpi-icon { background: var(--blue-lt);    color: var(--blue); }
-.kpi-card.k-crit   .kpi-icon { background: var(--red-lt);     color: var(--red); }
-.kpi-card.k-closed .kpi-icon { background: var(--green-lt);   color: var(--green); }
-.kpi-card.k-avg    .kpi-icon { background: var(--amber-lt);   color: var(--amber); }
+/* Review */
+.rv-section{margin-bottom:14px;}
+.rv-title{font-size:11px;font-weight:700;color:var(--sw-blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px;padding-bottom:5px;border-bottom:1px solid var(--gray-100);}
+.rv-row{display:flex;gap:8px;margin-bottom:7px;flex-wrap:wrap;}
+.rv-lbl{font-size:12px;color:var(--gray-400);font-weight:600;width:120px;flex-shrink:0;padding-top:1px;}
+.rv-val{font-size:13px;color:var(--gray-800);flex:1;font-weight:500;}
+.rv-id{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--sw-blue);background:var(--sw-blue-lt);padding:8px 14px;border-radius:var(--radius-sm);display:inline-block;border:1px solid rgba(0,102,161,.2);margin-bottom:14px;}
 
-/* ═══════════════════════════════════════════════════════════════════
-   FILTER BAR
-═══════════════════════════════════════════════════════════════════ */
-.filter-bar {
-  background: var(--white); border: 1px solid var(--gray-200);
-  border-radius: var(--radius); padding: 12px 16px;
-  margin-bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap;
-  align-items: center; box-shadow: var(--shadow-sm);
-}
-.filter-bar input, .filter-bar select {
-  padding: 7px 11px; border: 1px solid var(--gray-300); border-radius: var(--radius-sm);
-  font-size: 13px; color: var(--gray-700); background: var(--gray-50);
-  transition: border-color .12s; min-width: 130px;
-}
-.filter-bar input { min-width: 220px; flex: 1; }
-.filter-bar input:focus, .filter-bar select:focus {
-  outline: none; border-color: var(--blue); background: var(--white);
-  box-shadow: 0 0 0 2px rgba(15,108,189,.15);
-}
-.btn-clear {
-  padding: 7px 13px; border: 1px solid var(--gray-300); background: transparent;
-  border-radius: var(--radius-sm); font-size: 12px; color: var(--gray-500);
-  font-weight: 500; cursor: pointer; white-space: nowrap;
-}
-.btn-clear:hover { background: var(--gray-100); color: var(--gray-700); }
+/* Wizard footer */
+.wiz-footer{display:flex;align-items:center;justify-content:space-between;padding:16px 26px;border-top:1px solid var(--gray-100);background:var(--gray-50);gap:10px;}
+.wiz-fr{display:flex;gap:10px;align-items:center;margin-left:auto;}
 
-/* ═══════════════════════════════════════════════════════════════════
-   TABLE
-═══════════════════════════════════════════════════════════════════ */
-.table-wrap {
-  background: var(--white); border: 1px solid var(--gray-200);
-  border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden;
-}
-.table-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px; border-bottom: 1px solid var(--gray-200);
-}
-.table-count { font-size: 12px; color: var(--gray-500); }
-.table-count strong { color: var(--gray-900); }
-table { width: 100%; border-collapse: collapse; }
-thead th {
-  background: var(--gray-50); padding: 9px 13px; text-align: left;
-  font-size: 11px; font-weight: 700; color: var(--gray-500);
-  text-transform: uppercase; letter-spacing: .5px;
-  border-bottom: 1px solid var(--gray-200); white-space: nowrap;
-}
-tbody tr { border-bottom: 1px solid var(--gray-100); cursor: pointer; transition: background .08s; }
-tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: #F5F8FC; }
-tbody td { padding: 10px 13px; font-size: 13px; color: var(--gray-700); vertical-align: middle; }
-td.mono { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--navy); }
-.empty-row { text-align: center; padding: 52px 24px; }
-.empty-icon { font-size: 32px; margin-bottom: 10px; }
-.empty-text { color: var(--gray-400); font-size: 13px; }
+/* BUTTONS */
+.btn{padding:10px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .13s;white-space:nowrap;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-sm{padding:7px 14px;font-size:13px;}
+.btn-lg{padding:13px 26px;font-size:15px;}
+.btn-primary{background:var(--sw-blue);color:var(--white);}
+.btn-primary:hover{background:#0057A0;}
+.btn-red{background:var(--sw-red);color:var(--white);}
+.btn-red:hover{background:#C0260E;}
+.btn-green{background:var(--green);color:var(--white);}
+.btn-green:hover{background:#156515;}
+.btn-amber{background:var(--amber);color:var(--white);}
+.btn-amber:hover{background:#9A6600;}
+.btn-crimson{background:var(--crimson);color:var(--white);}
+.btn-crimson:hover{background:#7A1218;}
+.btn-ghost{background:transparent;color:var(--gray-700);border:1.5px solid var(--gray-200);}
+.btn-ghost:hover{background:var(--gray-100);}
+.btn-danger{background:var(--sw-red-lt);color:var(--sw-red);border:1px solid #F5B0A0;}
+.btn-danger:hover{background:#FAD5CF;}
 
-/* ═══════════════════════════════════════════════════════════════════
-   BADGES
-═══════════════════════════════════════════════════════════════════ */
-.badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 9px; border-radius: 4px; font-size: 11px; font-weight: 600;
-  white-space: nowrap; letter-spacing: .1px;
-}
-.badge-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+/* DETAIL */
+.detail-layout{display:grid;grid-template-columns:1fr 285px;gap:16px;max-width:1040px;margin:0 auto;}
+@media(max-width:800px){.detail-layout{grid-template-columns:1fr;}}
+.dc{background:var(--white);border:1px solid var(--gray-100);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow-sm);margin-bottom:13px;}
+.dc:last-child{margin-bottom:0;}
+.dc-ttl{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;}
+.dc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dr{display:flex;gap:8px;margin-bottom:9px;flex-wrap:wrap;}
+.dr:last-child{margin-bottom:0;}
+.dr-l{font-size:11px;font-weight:600;color:var(--gray-400);width:125px;flex-shrink:0;padding-top:2px;}
+.dr-v{font-size:13px;color:var(--gray-800);flex:1;line-height:1.5;}
+.dr-v.mono{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--sw-navy);}
+.edit-s{border:2px dashed var(--gray-300);border-radius:var(--radius);padding:16px 18px;background:var(--gray-50);margin-top:5px;}
+.es-amb{border-color:var(--amber);background:#FFFCF0;}
+.es-grn{border-color:var(--green);background:#F5FCF5;}
+.es-cri{border-color:var(--crimson);background:#FDF5F5;}
+.es-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:5px;}
+.es-amb .es-ttl{color:var(--amber);}
+.es-grn .es-ttl{color:var(--green);}
+.es-cri .es-ttl{color:var(--crimson);}
+.sec-sep{height:1px;background:var(--gray-100);margin:12px -24px;}
 
-.b-open       { background: var(--blue-lt);    color: var(--blue-dark); }
-.b-open       .badge-dot { background: var(--blue); }
-.b-assigned   { background: var(--amber-lt);   color: var(--amber-dark); }
-.b-assigned   .badge-dot { background: var(--amber); }
-.b-progress   { background: #FFF4E0;            color: #8B5E00; }
-.b-progress   .badge-dot { background: #C47B00; }
-.b-corrected  { background: var(--green-lt);   color: var(--green-dark); }
-.b-corrected  .badge-dot { background: var(--green); }
-.b-closed     { background: #E8F5E8;            color: var(--green-dark); }
-.b-closed     .badge-dot { background: var(--green); }
-.b-escalated  { background: var(--red-lt);     color: var(--red); }
-.b-escalated  .badge-dot { background: var(--red); }
+.sb-card{background:var(--white);border:1px solid var(--gray-100);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm);margin-bottom:13px;}
+.sb-card:last-child{margin-bottom:0;}
+.sb-ttl{font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
+.ic{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-50);font-size:12px;gap:8px;}
+.ic:last-child{border-bottom:none;}
+.ic-l{color:var(--gray-400);font-weight:500;}
+.ic-v{font-weight:600;color:var(--gray-800);text-align:right;}
+.ic-v.mono{font-family:var(--mono);font-size:11px;}
 
-.c-critical   { background: var(--red-lt);     color: var(--red); }
-.c-critical   .badge-dot { background: var(--red); }
-.c-nextpm     { background: var(--amber-lt);   color: var(--amber-dark); }
-.c-nextpm     .badge-dot { background: var(--amber); }
-.c-endrun     { background: var(--gray-200);   color: var(--gray-500); }
-.c-endrun     .badge-dot { background: var(--gray-400); }
+.tl{display:flex;flex-direction:column;}
+.tl-s{display:flex;gap:9px;position:relative;}
+.tl-s:not(:last-child)::before{content:'';position:absolute;left:10px;top:24px;bottom:-2px;width:2px;background:var(--gray-100);}
+.tl-d{width:22px;height:22px;border-radius:50%;flex-shrink:0;border:2px solid var(--gray-200);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;z-index:1;}
+.tl-d.done{border-color:var(--green);background:var(--green);color:var(--white);}
+.tl-d.active{border-color:var(--sw-blue);background:var(--sw-blue-lt);color:var(--sw-blue);}
+.tl-c{padding-bottom:13px;}
+.tl-t{font-size:12px;font-weight:600;color:var(--gray-800);}
+.tl-m{font-size:11px;color:var(--gray-400);margin-top:2px;}
 
-.days-chip {
-  display: inline-flex; align-items: center;
-  padding: 2px 7px; border-radius: 4px;
-  font-size: 11px; font-weight: 600; font-family: var(--mono);
-}
-.d-ok   { background: var(--green-lt); color: var(--green-dark); }
-.d-warn { background: var(--amber-lt); color: var(--amber-dark); }
-.d-late { background: var(--red-lt);   color: var(--red); }
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:4px;font-size:11px;font-weight:700;white-space:nowrap;}
+.bdot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.b-open{background:var(--sw-blue-lt);color:var(--sw-blue);}
+.b-open .bdot{background:var(--sw-blue);}
+.b-asgn{background:var(--amber-lt);color:var(--amber);}
+.b-asgn .bdot{background:var(--amber);}
+.b-prog{background:#FFF4E0;color:#8B5E00;}
+.b-prog .bdot{background:#C47B00;}
+.b-corr{background:var(--green-lt);color:var(--green);}
+.b-corr .bdot{background:var(--green);}
+.b-clos{background:#E8F5E8;color:var(--green);}
+.b-clos .bdot{background:var(--green);}
+.b-esc{background:var(--sw-red-lt);color:var(--sw-red);}
+.b-esc .bdot{background:var(--sw-red);}
+.c-crit{background:var(--sw-red-lt);color:var(--sw-red);}
+.c-crit .bdot{background:var(--sw-red);}
+.c-next{background:var(--amber-lt);color:var(--amber);}
+.c-next .bdot{background:var(--amber);}
+.c-end{background:var(--gray-100);color:var(--gray-500);}
+.c-end .bdot{background:var(--gray-400);}
+.dchip{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;font-family:var(--mono);}
+.d-ok{background:var(--green-lt);color:var(--green);}
+.d-warn{background:var(--amber-lt);color:var(--amber);}
+.d-late{background:var(--sw-red-lt);color:var(--sw-red);}
 
-/* ═══════════════════════════════════════════════════════════════════
-   BUTTONS
-═══════════════════════════════════════════════════════════════════ */
-.btn {
-  padding: 8px 18px; border-radius: var(--radius-sm); font-size: 13px;
-  font-weight: 600; border: none; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 7px;
-  transition: background .12s, box-shadow .12s; white-space: nowrap;
-}
-.btn:disabled { opacity: .4; cursor: not-allowed; }
-.btn-sm { padding: 6px 13px; font-size: 12px; }
-.btn-primary { background: var(--blue); color: var(--white); }
-.btn-primary:hover { background: var(--blue-dark); }
-.btn-amber   { background: var(--amber); color: var(--white); }
-.btn-amber:hover { background: var(--amber-dark); }
-.btn-green   { background: var(--green); color: var(--white); }
-.btn-green:hover { background: var(--green-dark); }
-.btn-crimson { background: var(--crimson); color: var(--white); }
-.btn-crimson:hover { background: var(--crimson-dark); }
-.btn-ghost   { background: transparent; color: var(--gray-700); border: 1px solid var(--gray-300); }
-.btn-ghost:hover { background: var(--gray-100); }
-.btn-danger  { background: var(--red-lt); color: var(--red); border: 1px solid #FAB8B3; }
-.btn-danger:hover { background: #FDD0CC; }
+/* TOAST / LOADER */
+#toast-area{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{display:flex;align-items:flex-start;gap:10px;padding:12px 15px;border-radius:var(--radius);border:1px solid transparent;box-shadow:var(--shadow-lg);max-width:330px;pointer-events:auto;animation:tIn .2s ease;font-size:13px;}
+@keyframes tIn{from{opacity:0;transform:translateX(14px);}to{opacity:1;transform:none;}}
+.t-ok{background:var(--green-lt);border-color:#90C890;color:var(--green);}
+.t-err{background:var(--sw-red-lt);border-color:#F5A090;color:var(--sw-red);}
+.t-info{background:var(--sw-blue-lt);border-color:#80B8E0;color:var(--sw-blue);}
+.t-icon{font-size:14px;flex-shrink:0;line-height:1.5;}
+.t-title{font-weight:700;margin-bottom:1px;}
+.t-msg{font-size:12px;opacity:.85;}
+#loader{position:fixed;inset:0;background:rgba(0,30,60,.4);display:none;align-items:center;justify-content:center;z-index:8000;}
+#loader.on{display:flex;}
+.lspin{width:40px;height:40px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--white);border-radius:50%;animation:spin .75s linear infinite;}
 
-/* ═══════════════════════════════════════════════════════════════════
-   FORM
-═══════════════════════════════════════════════════════════════════ */
-.form-card {
-  background: var(--white); border: 1px solid var(--gray-200);
-  border-radius: var(--radius); padding: 26px 30px;
-  box-shadow: var(--shadow-sm); max-width: 840px; margin: 0 auto;
-}
-.form-section-hdr {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 14px; border-radius: var(--radius-sm);
-  margin-bottom: 18px; font-size: 11px; font-weight: 700;
-  letter-spacing: .5px; text-transform: uppercase;
-}
-.fsh-blue    { background: var(--blue-lt);    color: var(--blue-dark); }
-.fsh-amber   { background: var(--amber-lt);   color: var(--amber-dark); }
-.fsh-green   { background: var(--green-lt);   color: var(--green-dark); }
-.fsh-crimson { background: var(--crimson-lt); color: var(--crimson-dark); }
+/* PHOTO UPLOAD */
+.photo-upload-area{border:2px dashed var(--gray-300);border-radius:var(--radius);padding:22px;text-align:center;cursor:pointer;transition:all .15s;background:var(--gray-50);position:relative;}
+.photo-upload-area:hover,.photo-upload-area.drag{border-color:var(--sw-blue);background:var(--sw-blue-lt);}
+.photo-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.pu-icon{font-size:32px;margin-bottom:8px;}
+.pu-label{font-size:14px;font-weight:600;color:var(--gray-500);}
+.pu-hint{font-size:12px;color:var(--gray-400);margin-top:4px;}
+.photo-preview{display:none;margin-top:14px;position:relative;display:none;}
+.photo-preview img{width:100%;max-height:220px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--gray-200);}
+.photo-preview-rm{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:var(--white);border:none;border-radius:50%;width:26px;height:26px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.photo-name{font-size:12px;color:var(--green);font-weight:600;margin-top:6px;display:none;}
 
-.form-grid { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; margin-bottom: 20px; }
-.form-grid.g1 { grid-template-columns: 1fr; }
-.form-grid.g3 { grid-template-columns: 1fr 1fr 1fr; }
-@media(max-width:620px) { .form-grid, .form-grid.g3 { grid-template-columns: 1fr; } }
+/* ROW HIGHLIGHTS */
+tbody tr.row-critical { background: #FFF0EE !important; }
+tbody tr.row-open     { background: #F0F6FF !important; }
+tbody tr.row-overdue  { background: #FFE8E5 !important; animation: pulse-row 2.5s ease-in-out infinite; }
+tbody tr.row-critical:hover, tbody tr.row-open:hover, tbody tr.row-overdue:hover { filter: brightness(.97); }
+@keyframes pulse-row { 0%,100%{background:#FFE8E5} 50%{background:#FFCFC9} }
+.overdue-badge { display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;background:#E8311A;color:#fff;font-size:11px;font-weight:800;animation:pulsebadge 1.5s ease-in-out infinite; }
+@keyframes pulsebadge { 0%,100%{opacity:1} 50%{opacity:.65} }
 
-.form-field { display: flex; flex-direction: column; gap: 4px; }
-.form-field.span-2 { grid-column: span 2; }
-.form-field label { font-size: 11px; font-weight: 600; color: var(--gray-700); }
-.req { color: var(--red); margin-left: 2px; }
-.form-field input, .form-field select, .form-field textarea {
-  padding: 8px 11px; border: 1px solid var(--gray-300); border-radius: var(--radius-sm);
-  font-size: 13px; color: var(--gray-900); background: var(--white); transition: border-color .12s;
-}
-.form-field input:focus, .form-field select:focus, .form-field textarea:focus {
-  outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(15,108,189,.12);
-}
-.form-field input[readonly] { background: var(--gray-50); color: var(--gray-500); }
-.form-field textarea { resize: vertical; min-height: 78px; }
-.hint { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
-.form-divider { height: 1px; background: var(--gray-200); margin: 20px 0; }
-.form-actions {
-  display: flex; gap: 10px; align-items: center; justify-content: flex-end;
-  padding-top: 18px; border-top: 1px solid var(--gray-200);
-}
-.qns-preview {
-  font-family: var(--mono); font-size: 17px; font-weight: 600; color: var(--blue);
-  background: var(--blue-lt); padding: 7px 14px; border-radius: var(--radius-sm);
-  display: inline-block; border: 1px solid rgba(15,108,189,.2);
-}
+/* HISTORY LOG */
+.history-log { display:flex;flex-direction:column;gap:8px;margin-bottom:10px; }
+.history-entry { background:var(--gray-50);border:1px solid var(--gray-100);border-radius:var(--radius-sm);padding:11px 14px;position:relative; }
+.history-entry.he-correction { border-left:3px solid var(--green); }
+.history-entry.he-reopen     { border-left:3px solid var(--sw-red); }
+.history-entry.he-comment    { border-left:3px solid var(--sw-blue); }
+.he-meta { font-size:11px;color:var(--gray-400);margin-bottom:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap; }
+.he-badge { display:inline-flex;align-items:center;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:700; }
+.he-b-corr { background:var(--green-lt);color:var(--green); }
+.he-b-reopen { background:var(--sw-red-lt);color:var(--sw-red); }
+.he-b-comment { background:var(--sw-blue-lt);color:var(--sw-blue); }
+.he-text { font-size:13px;color:var(--gray-800);line-height:1.5; }
+.he-detail { font-size:12px;color:var(--gray-500);margin-top:4px; }
 
-/* ═══════════════════════════════════════════════════════════════════
-   DETAIL VIEW
-═══════════════════════════════════════════════════════════════════ */
-.detail-layout { display: grid; grid-template-columns: 1fr 300px; gap: 18px; max-width: 1060px; margin: 0 auto; }
-@media(max-width:860px) { .detail-layout { grid-template-columns: 1fr; } }
+/* NEW KPI row for team averages */
+.kpi-row-2 { display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px; }
+@media(max-width:580px){ .kpi-row-2{grid-template-columns:1fr;} }
+.kpi-team { background:var(--white);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm);border:1px solid var(--gray-100); }
+.kpi-team-hdr { display:flex;align-items:center;gap:8px;margin-bottom:10px; }
+.kpi-team-icon { width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:16px; }
+.kt-proc .kpi-team-icon { background:var(--sw-blue-lt);color:var(--sw-blue); }
+.kt-mold .kpi-team-icon { background:var(--amber-lt);color:var(--amber); }
+.kpi-team-name { font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.4px; }
+.kpi-team-stats { display:flex;gap:20px;flex-wrap:wrap; }
+.kpi-team-stat { }
+.kpi-team-val { font-size:22px;font-weight:800;color:var(--sw-navy);line-height:1; }
+.kpi-team-lbl { font-size:10px;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:2px; }
 
-.detail-card {
-  background: var(--white); border: 1px solid var(--gray-200);
-  border-radius: var(--radius); padding: 22px 26px;
-  box-shadow: var(--shadow-sm); margin-bottom: 14px;
-}
-.detail-card:last-child { margin-bottom: 0; }
-
-.dc-title {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 11px; font-weight: 700; color: var(--gray-500);
-  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 16px;
-}
-.dc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-.dr { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-.dr:last-child { margin-bottom: 0; }
-.dr-label {
-  font-size: 11px; font-weight: 600; color: var(--gray-400);
-  width: 128px; flex-shrink: 0; padding-top: 2px;
-}
-.dr-value { font-size: 13px; color: var(--gray-800); flex: 1; line-height: 1.5; }
-.dr-value.mono { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--navy); }
-
-/* Edit section */
-.edit-section {
-  border: 2px dashed var(--gray-300); border-radius: var(--radius);
-  padding: 18px 20px; background: var(--gray-50); margin-top: 6px;
-}
-.es-amber  { border-color: var(--amber);   background: #FFFCF0; }
-.es-green  { border-color: var(--green);   background: #F5FCF5; }
-.es-crimson{ border-color: var(--crimson); background: #FDF5F5; }
-
-.es-title {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .5px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
-}
-.es-amber   .es-title { color: var(--amber-dark); }
-.es-green   .es-title { color: var(--green-dark); }
-.es-crimson .es-title { color: var(--crimson-dark); }
-.es-blue    .es-title { color: var(--blue-dark); }
-
-/* Sidebar */
-.sidebar-card {
-  background: var(--white); border: 1px solid var(--gray-200);
-  border-radius: var(--radius); padding: 18px 20px;
-  box-shadow: var(--shadow-sm); margin-bottom: 14px;
-}
-.sidebar-card:last-child { margin-bottom: 0; }
-.sb-title {
-  font-size: 11px; font-weight: 700; color: var(--gray-500);
-  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 14px;
-}
-.info-chip {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 7px 0; border-bottom: 1px solid var(--gray-100);
-  font-size: 12px; gap: 8px;
-}
-.info-chip:last-child { border-bottom: none; }
-.ic-label { color: var(--gray-400); font-weight: 500; }
-.ic-value { font-weight: 600; color: var(--gray-800); text-align: right; }
-.ic-value.mono { font-family: var(--mono); font-size: 11px; }
-
-/* Timeline */
-.timeline { display: flex; flex-direction: column; }
-.tl-step { display: flex; gap: 10px; position: relative; }
-.tl-step:not(:last-child)::before {
-  content: ''; position: absolute; left: 11px; top: 26px; bottom: -2px;
-  width: 2px; background: var(--gray-200);
-}
-.tl-dot {
-  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
-  border: 2px solid var(--gray-300); background: var(--white);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 700; z-index: 1;
-}
-.tl-dot.done   { border-color: var(--green); background: var(--green); color: var(--white); }
-.tl-dot.active { border-color: var(--blue);  background: var(--blue-lt); color: var(--blue); }
-.tl-content { padding-bottom: 14px; }
-.tl-title { font-size: 12px; font-weight: 600; color: var(--gray-800); }
-.tl-meta  { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
-
-/* Section sep */
-.sec-sep { height: 1px; background: var(--gray-200); margin: 16px -26px 16px; }
-
-/* ═══════════════════════════════════════════════════════════════════
-   TOAST
-═══════════════════════════════════════════════════════════════════ */
-#toast-area {
-  position: fixed; bottom: 22px; right: 22px; z-index: 9999;
-  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
-}
-.toast {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 12px 16px; border-radius: var(--radius); border: 1px solid transparent;
-  box-shadow: var(--shadow-lg); max-width: 340px; pointer-events: auto;
-  animation: toastIn .2s ease; font-size: 13px;
-}
-@keyframes toastIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
-.toast.t-ok   { background: var(--green-lt); border-color: #A7D5A7; color: var(--green-dark); }
-.toast.t-err  { background: var(--red-lt);   border-color: #F5B0A8; color: var(--red); }
-.toast.t-info { background: var(--blue-lt);  border-color: #90C2EE; color: var(--blue-dark); }
-.toast-icon   { font-size: 15px; flex-shrink: 0; line-height: 1.4; }
-.toast-title  { font-weight: 700; margin-bottom: 1px; }
-.toast-msg    { font-size: 12px; opacity: .85; }
-
-/* ═══════════════════════════════════════════════════════════════════
-   LOADING
-═══════════════════════════════════════════════════════════════════ */
-#loader {
-  position: fixed; inset: 0; background: rgba(13,31,53,.45);
-  display: none; align-items: center; justify-content: center; z-index: 8000;
-}
-#loader.on { display: flex; }
-.loader-spin {
-  width: 40px; height: 40px; border: 3px solid rgba(255,255,255,.2);
-  border-top-color: var(--white); border-radius: 50%;
-  animation: spin .75s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+/* DEPT SELECTOR for QC reporting */
+.dept-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px; }
+.dept-btn { padding:14px;border:2px solid var(--gray-200);border-radius:var(--radius);background:var(--white);cursor:pointer;transition:all .14s;text-align:center;font-size:14px;font-weight:700;color:var(--gray-700); }
+.dept-btn:hover { border-color:var(--sw-blue); }
+.dept-btn.sel { border-color:var(--sw-blue);background:var(--sw-blue);color:var(--white); }
+.dept-btn .dept-icon { font-size:24px;display:block;margin-bottom:5px; }
 </style>
 </head>
 <body>
 
-<!-- ════════════ LOADING ════════════ -->
-<div id="loader"><div class="loader-spin"></div></div>
+<div id="loader"><div class="lspin"></div></div>
 <div id="toast-area"></div>
 
-<!-- ════════════ SPLASH ════════════ -->
+<!-- SPLASH -->
 <div class="view active" id="view-splash">
-  <div class="splash-logo">QNS</div>
-  <div class="splash-title">Quality Notification System</div>
-  <div class="splash-sub">Vitop USA · SK North America</div>
-  <div id="splash-inner"></div><!-- filled by JS: spinner or demo card -->
+  <div class="sp-logo">SW</div>
+  <div class="sp-title">Quality Notification System</div>
+  <div class="sp-sub">Smurfit Westrock · VITOP San Antonio</div>
+  <div class="sp-spin"></div>
+  <div style="color:rgba(255,255,255,.3);font-size:12px;font-family:var(--mono);" id="sp-status">Initializing…</div>
 </div>
 
-<!-- ════════════ NAV ════════════ -->
+<!-- NAV -->
 <nav id="nav" class="hidden">
   <div class="nav-brand">
-    <div class="nav-logo">QNS</div>
-    <div class="nav-title">Quality Notification System
-      <span>Vitop USA · SK North America</span>
-    </div>
+    <svg width="34" height="34" viewBox="0 0 34 34"><rect width="34" height="34" rx="7" fill="#0066A1"/><text x="17" y="23" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="800" fill="white">SW</text></svg>
+    <div class="nav-vdiv"></div>
+    <div class="nav-app-name">QNS <span>Quality Notification System · Smurfit Westrock</span></div>
   </div>
-  <button class="nav-btn nav-btn-primary" onclick="showView('new-nc')">＋ New NC</button>
-  <button class="nav-btn nav-btn-ghost"   onclick="loadAndShow()">↻ Dashboard</button>
-  <div class="nav-sep"></div>
-  <div class="nav-user">
-    <div class="nav-avatar" id="nav-avatar">?</div>
-    <span id="nav-name">—</span>
-  </div>
+  <button class="nav-btn nb-ghost" onclick="showView('dashboard')">⊟ Dashboard</button>
+  <button class="nav-btn nb-red" onclick="startWizard()">⚠ Report a Problem</button>
 </nav>
 
-<!-- ════════════════════════════════════════════════════════════════
-     DASHBOARD
-════════════════════════════════════════════════════════════════ -->
+<!-- ══════════ DASHBOARD ══════════ -->
 <div class="view" id="view-dashboard">
-  <div class="view-body"><div class="page-container">
+<div class="view-body"><div class="pw">
 
-    <div class="page-header">
-      <div class="page-title">Dashboard <small id="refresh-ts"></small></div>
-      <button class="btn btn-ghost btn-sm" onclick="loadAndShow()">↻ Refresh</button>
+  <div class="page-hdr">
+    <div class="page-title">Dashboard <small id="refresh-ts"></small></div>
+    <button class="btn btn-ghost btn-sm" onclick="loadAndShow()">↻ Refresh</button>
+  </div>
+
+  <div class="cta-banner">
+    <div class="cta-txt">
+      <h2>Spotted a quality issue?</h2>
+      <p>Report it now — fast, simple, no paper needed.</p>
     </div>
+    <button class="cta-action" onclick="startWizard()">⚠ REPORT A PROBLEM</button>
+  </div>
 
-    <div class="kpi-grid">
-      <div class="kpi-card k-open">
-        <div class="kpi-icon">⚠</div>
-        <div><div class="kpi-value" id="k-open">—</div><div class="kpi-label">Open NCs</div></div>
-      </div>
-      <div class="kpi-card k-crit">
-        <div class="kpi-icon">🔴</div>
-        <div><div class="kpi-value" id="k-crit">—</div><div class="kpi-label">Critical Open</div></div>
-      </div>
-      <div class="kpi-card k-closed">
-        <div class="kpi-icon">✓</div>
-        <div><div class="kpi-value" id="k-closed">—</div><div class="kpi-label">Closed This Month</div></div>
-      </div>
-      <div class="kpi-card k-avg">
-        <div class="kpi-icon">⏱</div>
-        <div><div class="kpi-value" id="k-avg">—</div><div class="kpi-label">Avg Days Open</div></div>
-      </div>
-    </div>
+  <div class="kpi-row">
+    <div class="kpi k-open"><div class="kpi-icon">⚠</div><div><div class="kpi-val" id="k-open">—</div><div class="kpi-lbl">Open NCs</div></div></div>
+    <div class="kpi k-crit"><div class="kpi-icon">🔴</div><div><div class="kpi-val" id="k-crit">—</div><div class="kpi-lbl">Critical Open</div></div></div>
+    <div class="kpi k-done"><div class="kpi-icon">✓</div><div><div class="kpi-val" id="k-done">—</div><div class="kpi-lbl">Closed This Month</div></div></div>
+    <div class="kpi k-avg"><div class="kpi-icon">⏱</div><div><div class="kpi-val" id="k-avg">—</div><div class="kpi-lbl">Avg Days Open</div></div></div>
+  </div>
 
-    <div class="filter-bar">
-      <input  type="text" id="fs" placeholder="🔍  Search QNS ID, part, issue…" oninput="applyFilters()"/>
-      <select id="ff-status"   onchange="applyFilters()">
-        <option value="">All Statuses</option>
-        <option>Open</option><option>Assigned</option><option>In Progress</option>
-        <option>Corrected</option><option>Closed</option><option>Escalated</option>
-      </select>
-      <select id="ff-crit" onchange="applyFilters()">
-        <option value="">All Criticalities</option>
-        <option>Critical Issue</option><option>Next PM</option><option>End of Run</option>
-      </select>
-      <select id="ff-machine" onchange="applyFilters()">
-        <option value="">All Machines</option>
-      </select>
-      <select id="ff-team" onchange="applyFilters()">
-        <option value="">All Teams</option>
-        <option>Injection Team</option><option>Process Team</option>
-        <option>Mold Team</option><option>Assembly Team</option>
-      </select>
-      <button class="btn-clear" onclick="clearFilters()">✕ Clear</button>
-    </div>
-
-    <div class="table-wrap">
-      <div class="table-toolbar">
-        <div class="table-count" id="tbl-count"><strong>—</strong> records</div>
+  <div class="kpi-row-2">
+    <div class="kpi-team kt-proc">
+      <div class="kpi-team-hdr">
+        <div class="kpi-team-icon">⚙</div>
+        <div class="kpi-team-name">Injection Process</div>
       </div>
-      <div style="overflow-x:auto;">
-        <table>
-          <thead><tr>
-            <th>QNS ID</th><th>Date</th><th>Part</th><th>Machine</th>
-            <th>Issue Reason</th><th>Criticality</th><th>Status</th>
-            <th>Assigned To</th><th>Days Open</th><th></th>
-          </tr></thead>
-          <tbody id="tbl-body">
-            <tr><td colspan="10"><div class="empty-row">
-              <div class="empty-icon">⏳</div><div class="empty-text">Loading…</div>
-            </div></td></tr>
-          </tbody>
-        </table>
+      <div class="kpi-team-stats">
+        <div class="kpi-team-stat"><div class="kpi-team-val" id="kt-proc-avg">—</div><div class="kpi-team-lbl">Avg Days to Close</div></div>
+        <div class="kpi-team-stat"><div class="kpi-team-val" id="kt-proc-open">—</div><div class="kpi-team-lbl">Open</div></div>
+        <div class="kpi-team-stat"><div class="kpi-team-val" id="kt-proc-total">—</div><div class="kpi-team-lbl">Last 12 Months</div></div>
       </div>
     </div>
+    <div class="kpi-team kt-mold">
+      <div class="kpi-team-hdr">
+        <div class="kpi-team-icon">🏭</div>
+        <div class="kpi-team-name">Injection Moulding</div>
+      </div>
+      <div class="kpi-team-stats">
+        <div class="kpi-team-stat"><div class="kpi-team-val" id="kt-mold-avg">—</div><div class="kpi-team-lbl">Avg Days to Close</div></div>
+        <div class="kpi-team-stat"><div class="kpi-team-val" id="kt-mold-open">—</div><div class="kpi-team-lbl">Open</div></div>
+        <div class="kpi-team-stat"><div class="kpi-team-val" id="kt-mold-total">—</div><div class="kpi-team-lbl">Last 12 Months</div></div>
+      </div>
+    </div>
+  </div>
 
-  </div></div>
+  <div class="filter-bar">
+    <input type="text" id="fs" placeholder="🔍  Search QNS ID, part, issue…" oninput="applyFilters()"/>
+    <select id="ff-st" onchange="applyFilters()"><option value="">All Statuses</option><option>Open</option><option>Assigned</option><option>In Progress</option><option>Corrected</option><option>Closed</option><option>Escalated</option></select>
+    <select id="ff-cr" onchange="applyFilters()"><option value="">All Criticalities</option><option>Critical Issue</option><option>Next PM</option><option>End of Run</option></select>
+    <select id="ff-ma" onchange="applyFilters()"><option value="">All Machines</option></select>
+    <button class="btn-clr" onclick="clearFilters()">✕ Clear</button>
+  </div>
+
+  <div class="tbl-card">
+    <div class="tbl-bar">
+      <div class="tbl-count" id="tbl-cnt"><strong>—</strong> records</div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>QNS ID</th><th>Date</th><th>Reported By</th><th>Dept</th><th>Part</th><th>Machine</th><th>Issue</th><th>Criticality</th><th>Status</th><th>Days Open</th><th></th></tr></thead>
+        <tbody id="tbl-body"><tr><td colspan="10"><div class="empty-st"><div class="e-icon">⏳</div><div class="e-txt">Loading…</div></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div></div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════
-     NEW NC FORM
-════════════════════════════════════════════════════════════════ -->
+<!-- ══════════ WIZARD ══════════ -->
 <div class="view" id="view-new-nc">
-  <div class="view-body"><div class="page-container">
-    <div class="page-header">
-      <div class="page-title">New Non-Conformance</div>
-      <button class="btn btn-ghost" onclick="showView('dashboard')">← Back</button>
-    </div>
-    <div class="form-card">
+<div class="view-body"><div class="pw">
 
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;">
-        <div>
-          <div style="font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Auto-Generated QNS ID</div>
-          <div class="qns-preview" id="new-id-preview">—</div>
+  <div class="page-hdr">
+    <div class="page-title">Report a Problem</div>
+    <button class="btn btn-ghost btn-sm" onclick="showView('dashboard')">← Back</button>
+  </div>
+
+  <div class="wiz-wrap">
+    <div class="wiz-progress">
+      <div class="ps-row">
+        <div class="ps-step active" id="ps1"><div class="ps-dot">1</div><div class="ps-lbl">Who &amp; Where</div></div>
+        <div class="ps-step" id="ps2"><div class="ps-dot">2</div><div class="ps-lbl">The Problem</div></div>
+        <div class="ps-step" id="ps3"><div class="ps-dot">3</div><div class="ps-lbl">Severity</div></div>
+        <div class="ps-step" id="ps4"><div class="ps-dot">4</div><div class="ps-lbl">Review</div></div>
+      </div>
+      <div class="pb-track"><div class="pb-fill" id="pb" style="width:25%"></div></div>
+    </div>
+
+    <div class="wiz-card">
+
+      <!-- STEP 1 -->
+      <div class="wiz-step active" id="step-1">
+        <div class="wiz-hdr">
+          <div class="step-num">Step 1 of 4</div>
+          <div class="step-title">Who are you &amp; where is the issue?</div>
+          <div class="step-sub">Select your name and the machine where the problem was found.</div>
         </div>
-        <div style="text-align:right;font-size:12px;color:var(--gray-500);line-height:1.7;">
-          Created by: <strong id="new-created-by" style="color:var(--gray-700);">—</strong><br/>
-          <span id="new-date" style="font-family:var(--mono);font-size:11px;"></span>
+        <div class="wiz-body">
+          <div style="margin-bottom:18px;">
+            <div style="font-size:12px;font-weight:700;color:var(--gray-700);margin-bottom:9px;">Reported by <span class="req">*</span></div>
+            <div class="rep-grid" id="rep-grid"></div>
+            <input type="hidden" id="w-rep"/>
+          </div>
+          <div class="fg">
+            <div class="ff">
+              <label>Machine / Press # <span class="req">*</span></label>
+              <select id="w-mach" onchange="onMachineChange()">
+                <option value="">— Select Machine —</option>
+                <option>IM00</option><option>IM01</option><option>IM02</option><option>IM03</option><option>IM04</option>
+                <option>IM05</option><option>IM06</option><option>IM07</option><option>IM08</option>
+                <option>IM09</option><option>IM10</option><option>IM11</option><option>IM12</option>
+                <option>IM13</option><option>IM14</option><option>IM15</option>
+                <option>S17</option><option>T18</option><option>M11</option>
+                <option>P01</option><option>P02</option><option>P03</option><option>P04</option>
+              </select>
+            </div>
+            <div class="ff" id="mold-row">
+              <label>Mold / Tool <span class="req">*</span></label>
+              <select id="w-mold" disabled>
+                <option value="">— Select machine first —</option>
+              </select>
+              <span class="hint" id="mold-hint">Select a machine to see available molds</span>
+            </div>
+            <div class="ff">
+              <label>Part Name <span class="req">*</span></label>
+              <select id="w-part" disabled>
+                <option value="">— Select machine first —</option>
+              </select>
+              <span class="hint" id="part-hint">Select a machine to see available parts</span>
+            </div>
+
+          </div>
+        </div>
+        <div class="wiz-footer">
+          <div style="font-size:12px;color:var(--gray-400);"><span class="req">*</span> Required fields</div>
+          <div class="wiz-fr"><button class="btn btn-primary btn-lg" onclick="goStep(2)">Next →</button></div>
         </div>
       </div>
 
-      <div class="form-section-hdr fsh-blue">📋 NC Information — filled by QC Technician</div>
-      <div class="form-grid">
-        <div class="form-field">
-          <label>Part Name <span class="req">*</span></label>
-          <select id="fn-part">
-            <option value="">— Select —</option>
-            <option>Vitop Body</option><option>Vitop Cap</option><option>Vitop Piston</option>
-            <option>Vitop Valve</option><option>Vitop Tap</option><option>Gland</option>
-            <option>Push Tap</option><option>PT Cap/Button</option><option>PT Body</option><option>PT Stem</option>
-          </select>
+      <!-- STEP 2 -->
+      <div class="wiz-step" id="step-2">
+        <div class="wiz-hdr">
+          <div class="step-num">Step 2 of 4</div>
+          <div class="step-title">What is the problem?</div>
+          <div class="step-sub">Select the defect type and describe the affected cavities.</div>
         </div>
-        <div class="form-field">
-          <label>Machine / Press # <span class="req">*</span></label>
-          <select id="fn-machine" onchange="onMachineChange()">
-            <option value="">— Select —</option>
-            <option>IM01</option><option>IM02</option><option>IM03</option><option>IM04</option>
-            <option>IM05</option><option>IM06</option><option>IM07</option><option>IM08</option>
-            <option>IM09</option><option>IM10</option><option>IM11</option><option>IM12</option>
-            <option>IM13</option><option>IM14</option><option>IM15</option>
-            <option>S17</option><option>T18</option><option>P01</option><option>P02</option><option>M11</option>
-          </select>
+        <div class="wiz-body">
+          <div class="fg g1">
+            <div class="ff">
+              <label>Issue / Defect Type <span class="req">*</span></label>
+              <select id="w-reason">
+                <option value="">— Select Issue Type —</option>
+                <option>Coremark</option><option>Flash Closing Internal</option><option>Flash Lower Cylinder</option>
+                <option>Flash Welding Lips</option><option>Flash Pouring Channel</option><option>Flash Injection Line</option>
+                <option>Flash Back Plate</option><option>Flash Hooking</option><option>Flash Thread Stop</option>
+                <option>Thread Position</option><option>Filament</option><option>Bubble</option>
+                <option>Contamination</option><option>Short Shot</option><option>Failed Pin Gate</option>
+                <option>Surface Voids</option><option>High Injection Point</option><option>Flow Line</option>
+                <option>Watermark</option><option>Dent</option><option>Thin Wall</option>
+                <option>Deformed Injection Point</option><option>Cylinder Deformed</option>
+                <option>CMM Failed</option><option>Other (see notes)</option>
+              </select>
+            </div>
+            <div class="ff" id="cav-row">
+              <label>Cavities Affected <span class="req">*</span></label>
+              <input type="text" id="w-cav" placeholder="e.g. 256, 258, 260  or  All"/>
+            </div>
+            <div class="ff" id="cc-row">
+              <label>Closed Cavity?</label>
+              <select id="w-cc"><option value="No">No</option><option value="Yes">Yes</option></select>
+            </div>
+            <div class="ff">
+              <label>Additional Notes</label>
+              <textarea id="w-notes" placeholder="Any extra details about the problem…"></textarea>
+            </div>
+            <div class="ff">
+              <label>Photo of Defect</label>
+              <div class="photo-upload-area" id="pu-area" ondragover="puDrag(event,true)" ondragleave="puDrag(event,false)" ondrop="puDrop(event)">
+                <input type="file" id="w-photo" accept="image/jpeg,image/png,image/jpg" onchange="puSelect(this)"/>
+                <div class="pu-icon">📷</div>
+                <div class="pu-label">Tap to take or upload a photo</div>
+                <div class="pu-hint">JPEG or PNG — max 5MB</div>
+              </div>
+              <div class="photo-preview" id="pu-preview">
+                <img id="pu-img" src="" alt="Defect photo"/>
+                <button class="photo-preview-rm" onclick="puRemove()" type="button">✕</button>
+              </div>
+              <div class="photo-name" id="pu-name"></div>
+            </div>
+          </div>
         </div>
-        <div class="form-field">
-          <label>Mold Range</label>
-          <input type="text" id="fn-mold" placeholder="Auto-filled from machine #"/>
-          <span class="hint">Adjust if needed</span>
-        </div>
-        <div class="form-field">
-          <label>Cavities Affected <span class="req">*</span></label>
-          <input type="text" id="fn-cavities" placeholder="e.g. 256, 258, 260"/>
-        </div>
-        <div class="form-field">
-          <label>Issue Reason <span class="req">*</span></label>
-          <select id="fn-reason">
-            <option value="">— Select —</option>
-            <option>Coremark</option><option>Flash Closing Internal</option><option>Flash Lower Cylinder</option>
-            <option>Flash Welding Lips</option><option>Flash Pouring Channel</option><option>Flash Injection Line</option>
-            <option>Flash Back Plate</option><option>Flash Hooking</option><option>Flash Thread Stop</option>
-            <option>Thread Position</option><option>Filament</option><option>Bubble</option>
-            <option>Contamination</option><option>Short Shot</option><option>Failed Pin Gate</option>
-            <option>Surface Voids</option><option>High Injection Point</option><option>Flow Line</option>
-            <option>Watermark</option><option>Dent</option><option>Thin Wall</option>
-            <option>Deformed Injection Point</option><option>Cylinder Deformed</option>
-            <option>CMM Failed</option><option>Other (see notes)</option>
-          </select>
-        </div>
-        <div class="form-field">
-          <label>Criticality <span class="req">*</span></label>
-          <select id="fn-crit">
-            <option value="">— Select —</option>
-            <option>Critical Issue</option><option>Next PM</option><option>End of Run</option>
-          </select>
-        </div>
-        <div class="form-field">
-          <label>Closed Cavity?</label>
-          <select id="fn-closed-cav">
-            <option value="No">No</option><option value="Yes">Yes</option>
-          </select>
-        </div>
-        <div class="form-field">
-          <label>Root Cause Type</label>
-          <select id="fn-root">
-            <option value="">— Select —</option>
-            <option>Process</option><option>Mold</option>
-          </select>
-        </div>
-        <div class="form-field span-2">
-          <label>Potential Customer Impact</label>
-          <textarea id="fn-impact" placeholder="Describe potential impact at the customer if any…"></textarea>
+        <div class="wiz-footer">
+          <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+          <div class="wiz-fr"><button class="btn btn-primary btn-lg" onclick="goStep(3)">Next →</button></div>
         </div>
       </div>
-      <div class="form-actions">
-        <button class="btn btn-ghost" onclick="showView('dashboard')">Cancel</button>
-        <button class="btn btn-primary" onclick="submitNC()">Submit NC →</button>
+
+      <!-- STEP 3 -->
+      <div class="wiz-step" id="step-3">
+        <div class="wiz-hdr">
+          <div class="step-num">Step 3 of 4</div>
+          <div class="step-title">How serious is this issue?</div>
+          <div class="step-sub">Choose the urgency level that best describes the situation.</div>
+        </div>
+        <div class="wiz-body">
+          <div class="crit-grid">
+            <button class="crit-btn" id="cb-crit" onclick="selCrit('Critical Issue')">
+              <div class="c-icon">🔴</div>
+              <span class="c-lbl">Critical Issue</span>
+              <span class="c-desc">Stop production or risk reaching customer</span>
+            </button>
+            <button class="crit-btn" id="cb-next" onclick="selCrit('Next PM')">
+              <div class="c-icon">🟡</div>
+              <span class="c-lbl">Next PM</span>
+              <span class="c-desc">Fix at next planned maintenance</span>
+            </button>
+            <button class="crit-btn" id="cb-end" onclick="selCrit('End of Run')">
+              <div class="c-icon">⚪</div>
+              <span class="c-lbl">End of Run</span>
+              <span class="c-desc">Can wait until end of production run</span>
+            </button>
+          </div>
+          <input type="hidden" id="w-crit"/>
+          <div class="ff" style="margin-top:18px;">
+            <label>Potential Customer Impact</label>
+            <textarea id="w-impact" placeholder="Will the customer notice this defect? Any quality risk?"></textarea>
+          </div>
+        </div>
+        <div class="wiz-footer">
+          <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+          <div class="wiz-fr"><button class="btn btn-primary btn-lg" onclick="goStep(4)">Next →</button></div>
+        </div>
       </div>
+
+      <!-- STEP 4 -->
+      <div class="wiz-step" id="step-4">
+        <div class="wiz-hdr">
+          <div class="step-num">Step 4 of 4</div>
+          <div class="step-title">Review &amp; Submit</div>
+          <div class="step-sub">Check the information below before submitting.</div>
+        </div>
+        <div class="wiz-body">
+          <div class="rv-id" id="rv-id">—</div>
+          <div class="rv-section">
+            <div class="rv-title">📍 Who &amp; Where</div>
+            <div class="rv-row"><div class="rv-lbl">Reported by</div><div class="rv-val" id="rv-rep">—</div></div>
+            <div class="rv-row"><div class="rv-lbl">Machine</div><div class="rv-val" id="rv-mach">—</div></div>
+            <div class="rv-row"><div class="rv-lbl">Mold Range</div><div class="rv-val" id="rv-mold">—</div></div>
+            <div class="rv-row"><div class="rv-lbl">Part</div><div class="rv-val" id="rv-part">—</div></div>
+          </div>
+          <div class="rv-section">
+            <div class="rv-title">🔧 The Problem</div>
+            <div class="rv-row"><div class="rv-lbl">Issue Type</div><div class="rv-val" id="rv-reason">—</div></div>
+            <div class="rv-row"><div class="rv-lbl">Cavities</div><div class="rv-val" id="rv-cav">—</div></div>
+            <div class="rv-row" id="rv-cc-row"><div class="rv-lbl">Closed Cavity</div><div class="rv-val" id="rv-cc">—</div></div>
+            <div class="rv-row"><div class="rv-lbl">Photo</div><div class="rv-val" id="rv-photo-wrap">—</div></div>
+          </div>
+          <div class="rv-section">
+            <div class="rv-title">⚠ Severity</div>
+            <div class="rv-row"><div class="rv-lbl">Criticality</div><div class="rv-val" id="rv-crit">—</div></div>
+            <div class="rv-row"><div class="rv-lbl">Customer Impact</div><div class="rv-val" id="rv-impact">—</div></div>
+          </div>
+        </div>
+        <div class="wiz-footer">
+          <button class="btn btn-ghost" onclick="goStep(3)">← Back</button>
+          <div class="wiz-fr"><button class="btn btn-red btn-lg" onclick="submitNC()">⚠ Submit NC</button></div>
+        </div>
+      </div>
+
     </div>
-  </div></div>
+  </div>
+
+</div></div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════
-     NC DETAIL
-════════════════════════════════════════════════════════════════ -->
+<!-- ══════════ DETAIL ══════════ -->
 <div class="view" id="view-detail">
-  <div class="view-body"><div class="page-container">
-    <div class="page-header">
-      <div class="page-title" id="d-page-title">NC Detail</div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span id="d-status-badge"></span>
-        <button class="btn btn-ghost btn-sm" onclick="showView('dashboard')">← Dashboard</button>
-      </div>
+<div class="view-body"><div class="pw">
+
+  <div class="page-hdr">
+    <div class="page-title" id="d-ttl">NC Detail</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span id="d-badge"></span>
+      <button class="btn btn-ghost btn-sm" onclick="showView('dashboard')">← Dashboard</button>
     </div>
+  </div>
 
-    <div class="detail-layout">
-      <!-- MAIN -->
-      <div>
-        <!-- NC Info -->
-        <div class="detail-card">
-          <div class="dc-title"><div class="dc-dot" style="background:var(--blue)"></div>NC Information</div>
-          <div class="dr"><div class="dr-label">Part Name</div>      <div class="dr-value" id="d-part">—</div></div>
-          <div class="dr"><div class="dr-label">Machine</div>        <div class="dr-value mono" id="d-machine">—</div></div>
-          <div class="dr"><div class="dr-label">Mold Range</div>     <div class="dr-value" id="d-mold">—</div></div>
-          <div class="dr"><div class="dr-label">Cavities</div>       <div class="dr-value" id="d-cav">—</div></div>
-          <div class="dr"><div class="dr-label">Issue Reason</div>   <div class="dr-value" id="d-reason">—</div></div>
-          <div class="dr"><div class="dr-label">Criticality</div>    <div class="dr-value" id="d-crit">—</div></div>
-          <div class="dr"><div class="dr-label">Closed Cavity</div>  <div class="dr-value" id="d-cav-closed">—</div></div>
-          <div class="dr"><div class="dr-label">Root Cause</div>     <div class="dr-value" id="d-root">—</div></div>
-          <div class="dr"><div class="dr-label">Customer Impact</div><div class="dr-value" id="d-impact">—</div></div>
-          <div class="dr"><div class="dr-label">Created By</div>     <div class="dr-value" id="d-created-by">—</div></div>
-        </div>
+  <div class="detail-layout">
+    <div>
+      <div class="dc">
+        <div class="dc-ttl"><div class="dc-dot" style="background:var(--sw-blue)"></div>NC Information</div>
+        <div class="dr"><div class="dr-l">Reported By</div><div class="dr-v" id="d-rep">—</div></div>
+        <div class="dr"><div class="dr-l">Part Name</div><div class="dr-v" id="d-part">—</div></div>
+        <div class="dr"><div class="dr-l">Machine</div><div class="dr-v mono" id="d-mach">—</div></div>
+        <div class="dr"><div class="dr-l">Mold Range</div><div class="dr-v" id="d-mold">—</div></div>
+        <div class="dr"><div class="dr-l">Cavities</div><div class="dr-v" id="d-cav">—</div></div>
+        <div class="dr"><div class="dr-l">Issue Reason</div><div class="dr-v" id="d-reason">—</div></div>
+        <div class="dr"><div class="dr-l">Criticality</div><div class="dr-v" id="d-crit">—</div></div>
+        <div class="dr"><div class="dr-l">Closed Cavity</div><div class="dr-v" id="d-cc">—</div></div>
+        <div class="dr"><div class="dr-l">Department</div><div class="dr-v" id="d-ncdept">—</div></div>
+        <div class="dr"><div class="dr-l">Customer Impact</div><div class="dr-v" id="d-impact">—</div></div>
+        <div class="dr"><div class="dr-l">Notes</div><div class="dr-v" id="d-notes">—</div></div>
+        <div class="dr" id="d-photo-row" style="display:none;"><div class="dr-l">Photo</div><div class="dr-v"><img id="d-photo-img" src="" alt="Defect" style="max-width:100%;max-height:200px;border-radius:6px;border:1px solid var(--gray-200);margin-top:4px;"></div></div>
+      </div>
 
-        <!-- ROUTING — visible when Open -->
-        <div class="detail-card" id="sec-routing" style="display:none;">
-          <div class="dc-title"><div class="dc-dot" style="background:var(--amber)"></div>Team Lead — Route NC</div>
-          <div class="edit-section es-amber">
-            <div class="es-title">✏ Assign to Team</div>
-            <div class="form-grid">
-              <div class="form-field">
-                <label>Assign to Team <span class="req">*</span></label>
-                <select id="r-team">
-                  <option value="">— Select —</option>
-                  <option>Injection Team</option><option>Process Team</option>
-                  <option>Mold Team</option><option>Assembly Team</option>
-                </select>
-              </div>
-              <div class="form-field">
-                <label>Assign to Person (optional)</label>
-                <input type="text" id="r-person" placeholder="Name"/>
-              </div>
-            </div>
-            <div class="form-actions" style="border-top:none;padding-top:10px;">
-              <button class="btn btn-amber" onclick="routeNC()">Route NC →</button>
-            </div>
+      <!-- Standalone correction history — always shown once entries exist -->
+      <div class="dc" id="corr-history-card" style="display:none;">
+        <div class="dc-ttl"><div class="dc-dot" style="background:var(--green)"></div>Correction History</div>
+        <div class="history-log" id="corr-history-card-log"></div>
+      </div>
+
+      <div class="dc" id="s-route" style="display:none;">
+        <div class="dc-ttl"><div class="dc-dot" style="background:var(--amber)"></div>Team Lead — Route NC</div>
+        <div class="edit-s es-amb">
+          <div class="es-ttl">✏ Assign to Team</div>
+          <div class="dept-grid" style="grid-template-columns:1fr 1fr;margin-bottom:12px;">
+            <button class="dept-btn" id="rb-proc" onclick="selRouteTeam('Injection Process',this)"><span class="dept-icon">⚙</span>Injection Process</button>
+            <button class="dept-btn" id="rb-mold" onclick="selRouteTeam('Injection Moulding',this)"><span class="dept-icon">🏭</span>Injection Moulding</button>
+          </div>
+          <input type="hidden" id="r-team"/>
+          <!-- Dept is auto-detected from machine in the NC — shown as info only -->
+          <div id="r-dept-info" style="padding:8px 12px;border-radius:5px;background:var(--gray-50);border:1px solid var(--gray-200);font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:12px;">
+            📋 Department: <span id="r-dept-label">—</span>
+          </div>
+          <div class="ff" style="margin-bottom:12px;"><label>Assign to Person (optional)</label><input type="text" id="r-person" placeholder="Name"/></div>
+          <div style="display:flex;justify-content:flex-end;">
+            <button class="btn btn-amber" onclick="routeNC()">Route NC →</button>
           </div>
         </div>
+      </div>
 
-        <!-- CORRECTION — visible when Assigned / In Progress -->
-        <div class="detail-card" id="sec-correction" style="display:none;">
-          <div class="dc-title"><div class="dc-dot" style="background:var(--green)"></div>Process / Mold Team — Corrective Actions</div>
-          <div id="corr-existing" style="display:none;">
-            <div class="dr"><div class="dr-label">Assigned Team</div>  <div class="dr-value" id="d-assigned-team">—</div></div>
-            <div class="dr"><div class="dr-label">Assigned Person</div><div class="dr-value" id="d-assigned-person">—</div></div>
-            <div class="dr"><div class="dr-label">Actions Logged</div> <div class="dr-value" id="d-actions">—</div></div>
-          </div>
-          <div class="sec-sep" id="corr-sep" style="display:none;"></div>
-          <div class="edit-section es-green">
-            <div class="es-title">✏ Log Correction &amp; Close</div>
-            <div class="form-grid g1">
-              <div class="form-field">
-                <label>Actions Taken to Correct <span class="req">*</span></label>
-                <textarea id="c-actions" placeholder="Describe corrective steps (e.g. polished core, adjusted process, changed insert…)" style="min-height:90px;"></textarea>
-              </div>
-            </div>
-            <div class="form-grid">
-              <div class="form-field">
-                <label>Shots Validated <span class="req">*</span></label>
-                <input type="number" id="c-shots" min="0" placeholder="e.g. 10"/>
-              </div>
-              <div class="form-field">
-                <label>Issue Corrected?</label>
-                <select id="c-corrected">
-                  <option value="Yes">Yes — ready for QC review</option>
-                  <option value="No">No — still in progress</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-actions" style="border-top:none;padding-top:10px;">
-              <button class="btn btn-green" onclick="submitCorrection()">Submit Correction →</button>
-            </div>
-          </div>
+      <div class="dc" id="s-corr" style="display:none;">
+        <div class="dc-ttl"><div class="dc-dot" style="background:var(--green)"></div>Process / Moulding Team — Corrective Actions</div>
+        <div id="corr-ex">
+          <div class="dr"><div class="dr-l">Assigned Team</div><div class="dr-v" id="d-at">—</div></div>
+          <div class="dr"><div class="dr-l">Assigned Person</div><div class="dr-v" id="d-ap">—</div></div>
         </div>
-
-        <!-- VERIFICATION — visible when Corrected -->
-        <div class="detail-card" id="sec-verify" style="display:none;">
-          <div class="dc-title"><div class="dc-dot" style="background:var(--crimson)"></div>Quality Department — Verify &amp; Close</div>
-          <div class="dr"><div class="dr-label">Actions Taken</div>   <div class="dr-value" id="d-actions-qc">—</div></div>
-          <div class="dr"><div class="dr-label">Shots Validated</div> <div class="dr-value mono" id="d-shots-qc">—</div></div>
-          <div class="dr"><div class="dr-label">Corrected By</div>    <div class="dr-value" id="d-corrected-by">—</div></div>
-          <div class="dr"><div class="dr-label">Correction Date</div> <div class="dr-value mono" id="d-corr-date">—</div></div>
+        <div id="corr-history" style="display:none;">
+          <div style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Correction History</div>
+          <div class="history-log" id="corr-history-log"></div>
           <div class="sec-sep"></div>
-          <div class="edit-section es-crimson">
-            <div class="es-title">✏ Quality Sign-Off</div>
-            <div class="form-grid g1">
-              <div class="form-field">
-                <label>QC Verification Notes</label>
-                <textarea id="v-notes" placeholder="Any remaining concerns or observations…"></textarea>
-              </div>
-            </div>
-            <div class="form-grid">
-              <div class="form-field">
-                <label>Close This NC?</label>
-                <select id="v-close">
-                  <option value="Yes">Yes — fully closed</option>
-                  <option value="No">No — reopen for further action</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-actions" style="border-top:none;padding-top:10px;">
-              <button class="btn btn-crimson" onclick="submitVerification()">Submit QC Sign-Off →</button>
+        </div>
+        <div class="edit-s es-grn">
+          <div class="es-ttl">✏ Log Correction Entry</div>
+          <div class="ff" style="margin-bottom:13px;"><label>Actions Taken <span class="req">*</span></label><textarea id="c-act" placeholder="Describe what was done to fix the issue…"></textarea></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:12px;">
+            <div class="ff" id="shots-row"><label>Shots Validated <span class="req">*</span></label><input type="number" id="c-shots" min="0" placeholder="e.g. 10"/></div>
+            <div class="ff"><label>Issue Corrected?</label>
+              <select id="c-corr"><option value="Yes">Yes — ready for QC</option><option value="No">No — still in progress</option></select>
             </div>
           </div>
-        </div>
-
-        <!-- CLOSED SUMMARY -->
-        <div class="detail-card" id="sec-closed" style="display:none;">
-          <div class="dc-title"><div class="dc-dot" style="background:var(--green)"></div>Closed — Summary</div>
-          <div class="dr"><div class="dr-label">Actions Taken</div>   <div class="dr-value" id="d-s-actions">—</div></div>
-          <div class="dr"><div class="dr-label">Shots Validated</div> <div class="dr-value mono" id="d-s-shots">—</div></div>
-          <div class="dr"><div class="dr-label">Corrected By</div>    <div class="dr-value" id="d-s-corrby">—</div></div>
-          <div class="dr"><div class="dr-label">Correction Date</div> <div class="dr-value mono" id="d-s-corrdate">—</div></div>
-          <div class="dr"><div class="dr-label">Assigned Team</div>   <div class="dr-value" id="d-s-team">—</div></div>
-          <div class="dr"><div class="dr-label">QC Notes</div>        <div class="dr-value" id="d-s-qcnotes">—</div></div>
-          <div class="dr"><div class="dr-label">QC Approver</div>     <div class="dr-value" id="d-s-qcapprover">—</div></div>
-          <div class="dr"><div class="dr-label">Date Closed</div>     <div class="dr-value mono" id="d-s-dateclosed">—</div></div>
-        </div>
-      </div><!-- /main -->
-
-      <!-- SIDEBAR -->
-      <div>
-        <div class="sidebar-card">
-          <div class="sb-title">Status Timeline</div>
-          <div class="timeline" id="detail-timeline"></div>
-        </div>
-        <div class="sidebar-card">
-          <div class="sb-title">Key Info</div>
-          <div class="info-chip"><span class="ic-label">QNS ID</span>      <span class="ic-value mono" id="d-sb-id">—</span></div>
-          <div class="info-chip"><span class="ic-label">Date Created</span><span class="ic-value mono" id="d-sb-date">—</span></div>
-          <div class="info-chip"><span class="ic-label">Days Open</span>   <span class="ic-value" id="d-sb-days">—</span></div>
-          <div class="info-chip"><span class="ic-label">Root Cause</span>  <span class="ic-value" id="d-sb-root">—</span></div>
-        </div>
-        <div class="sidebar-card">
-          <div class="sb-title">Quick Actions</div>
-          <div id="sb-actions" style="display:flex;flex-direction:column;gap:8px;"></div>
+          <div style="display:flex;justify-content:flex-end;"><button class="btn btn-green" onclick="submitCorrection()">Submit Correction →</button></div>
         </div>
       </div>
+
+      <div class="dc" id="s-verify" style="display:none;">
+        <div class="dc-ttl"><div class="dc-dot" style="background:var(--crimson)"></div>Quality Department — Verify &amp; Close</div>
+        <div class="dr"><div class="dr-l">Actions Taken</div><div class="dr-v" id="d-aqc">—</div></div>
+        <div class="dr" id="sqc-row"><div class="dr-l">Shots Validated</div><div class="dr-v mono" id="d-sqc">—</div></div>
+        <div class="dr"><div class="dr-l">Corrected By</div><div class="dr-v" id="d-cby">—</div></div>
+        <div class="dr"><div class="dr-l">Correction Date</div><div class="dr-v mono" id="d-cdt">—</div></div>
+        <div class="sec-sep"></div>
+        <div id="qc-history" style="display:none;">
+          <div style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">QC Review History</div>
+          <div class="history-log" id="qc-history-log"></div>
+          <div class="sec-sep"></div>
+        </div>
+        <div class="edit-s es-cri">
+          <div class="es-ttl">✏ Quality Sign-Off</div>
+          
+          <div class="ff" style="margin-bottom:13px;"><label>QC Notes</label><textarea id="v-notes" placeholder="Any remaining concerns or observations…"></textarea></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:12px;">
+            <div class="ff"><label>QC Approver <span class="req">*</span></label>
+              <select id="v-appr">
+                <option value="">— Select —</option>
+                <option>Juan Martinez</option><option>Maria Garza</option>
+                <option>Gabriel Hernandez</option><option>Sharri Smith</option>
+                <option>Susie Quintana</option>
+              </select>
+            </div>
+            <div class="ff"><label>Close This NC?</label>
+              <select id="v-close"><option value="Yes">Yes — fully resolved ✓</option><option value="No">No — reopen for more work</option></select>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;"><button class="btn btn-crimson" onclick="submitVerification()">Submit QC Sign-Off →</button></div>
+        </div>
+      </div>
+
+      <div class="dc" id="s-closed" style="display:none;">
+        <div class="dc-ttl"><div class="dc-dot" style="background:var(--green)"></div>Closed — Summary</div>
+        <div class="dr"><div class="dr-l">Actions Taken</div><div class="dr-v" id="d-sa">—</div></div>
+        <div class="dr"><div class="dr-l">Total Attempts</div><div class="dr-v" id="d-sa-count">—</div></div>
+        <div class="dr"><div class="dr-l">Shots Validated</div><div class="dr-v mono" id="d-ss">—</div></div>
+        <div class="dr"><div class="dr-l">Corrected By</div><div class="dr-v" id="d-scb">—</div></div>
+        <div class="dr"><div class="dr-l">Correction Date</div><div class="dr-v mono" id="d-scd">—</div></div>
+        <div class="dr"><div class="dr-l">Assigned Team</div><div class="dr-v" id="d-st">—</div></div>
+        <div class="dr"><div class="dr-l">QC Notes</div><div class="dr-v" id="d-sqn">—</div></div>
+        <div class="dr"><div class="dr-l">QC Approver</div><div class="dr-v" id="d-sqa">—</div></div>
+        <div class="dr"><div class="dr-l">Date Closed</div><div class="dr-v mono" id="d-sdc">—</div></div>
+      </div>
     </div>
-  </div></div>
+
+    <div>
+      <div class="sb-card">
+        <div class="sb-ttl">Status Timeline</div>
+        <div class="tl" id="d-tl"></div>
+      </div>
+      <div class="sb-card">
+        <div class="sb-ttl">Key Info</div>
+        <div class="ic"><span class="ic-l">QNS ID</span><span class="ic-v mono" id="d-sid">—</span></div>
+        <div class="ic"><span class="ic-l">Date Created</span><span class="ic-v mono" id="d-sdate">—</span></div>
+        <div class="ic"><span class="ic-l">Days Open</span><span class="ic-v" id="d-sdays">—</span></div>
+        <div class="ic"></div>
+      </div>
+      <div class="sb-card">
+        <div class="sb-ttl">Quick Actions</div>
+        <div id="sb-acts" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+</div></div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════
-     JAVASCRIPT
-════════════════════════════════════════════════════════════════ -->
 <script>
-/* ─────────────────────────────────────────────────────────────────
-   ★  CONFIG — only 2 things to set  ★
-   ─────────────────────────────────────────────────────────────────
-   siteUrl  : your SharePoint site URL, e.g.
-              "https://contoso.sharepoint.com/sites/Quality"
-              Leave empty → auto-detected from the page URL.
-   listName : exact name of your SharePoint List.
-   demoMode : true while testing, false when connected to SharePoint.
-────────────────────────────────────────────────────────────────── */
+/* ── CONFIG ─────────────────────────────────── */
 const CONFIG = {
-  siteUrl:  'https://smurfitkappa.sharepoint.com/sites/USA-SANANTONIOVITOP',                    // leave empty for auto-detect
-  listName: 'QNS_NonConformance',
-  demoMode: false
+  flowGet:    'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ac02c34e5f0748d8af5fbf28d29abf58/triggers/manual/paths/invoke?api-version=1',
+  flowCreate: 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/2fd482e902c147fb84645e950a8003d7/triggers/manual/paths/invoke?api-version=1',
+  flowUpdate: 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d209eec985604daa85111314b2a9a7a5/triggers/manual/paths/invoke?api-version=1',
+  demoMode: true
 };
 
-/* ── Auto-detect site URL from current page path ── */
-const SITE_URL = CONFIG.siteUrl || (() => {
-  const m = window.location.pathname.match(/^(\/sites\/[^/]+|\/teams\/[^/]+)/);
-  return m ? window.location.origin + m[1] : window.location.origin;
-})();
-
-/* ─────────────────────────────────────────────────────────────────
-   MOLD RANGE MAP
-────────────────────────────────────────────────────────────────── */
-const MOLD_MAP = {
-  IM01:'29-60', IM02:'57-88', IM03:'1F-16F', IM04:'1E-16E', IM05:'1D-16D',
-  IM06:'1-16G', IM07:'249-264', IM08:'153-168', IM09:'129-160', IM10:'121-136',
-  IM11:'1A-32A', IM12:'1B-32B', IM13:'1B-16B', IM14:'1D-32D', IM15:'1C-48C'
+/* ── CONSTANTS ───────────────────────────────── */
+const STAFF = ['Ruby Cedillo','Juan Martinez','Susie Quintana','Maria Garza','Sharri Smith','Luis Salgado','Richard Anaya','Jose Ramos','Kevin Marroquin','Fabian Mata','Tonya Tilicke','Gabriel Hernandez','Dan Hotchkiss','Gian Luca Cavriani','Roberto Hernandez','Rickey Manaway','Salvador Prieto','Roger Rodriguez','Luis Rodriguez','Cristobal Anaya','Not Listed'];
+// ★ MOLD OPTIONS PER MACHINE — update this list whenever a mold moves
+const MOLD_OPTIONS = {
+  IM00: ['1-32A','1-32B'],
+  IM01: ['65-96','1-32A'],
+  IM02: ['1-32A','1-32B','1-64C'],
+  IM03: ['1-16A','1-16B','1-16C','1-16D','1-16E','1-16F','1-16G'],
+  IM04: ['1-16A','1-16B','1-16C','1-16D','1-16E','1-16F','1-16G'],
+  IM05: ['29-60','1-32B'],
+  IM06: ['1-32A','57-88'],
+  IM07: ['121-136','153-168','249-264'],
+  IM08: ['121-136','153-168','249-264'],
+  IM09: ['65-96','129-160'],
+  IM10: ['1-16A','1-16B','1-16C','1-16D','1-16E','1-16F','1-16G','121-136','153-168','249-264'],
+  IM11: ['1-16A','1-16B','1-16C','1-16D','1-16E','1-16F','1-16G'],
+  IM12: ['1-16A','1-16B','1-16C','1-16D','1-16E','1-16F','1-16G'],
+  IM13: ['1-16A','1-16B','1-16C','1-16D','1-16E','1-16F','1-16G'],
+  IM14: ['1-32A','1-32B','1-48C'],
+  IM15: ['1-32A','1-32B','1-48C'],
+  S17: ['Vitop Tap'], T18: ['Vitop Tap'], M11: ['Vitop Tap'],
+  P01: ['Pushtap'], P02: ['Pushtap'], P03: ['Pushtap'], P04: ['Pushtap']
 };
 
-/* ─────────────────────────────────────────────────────────────────
-   DEMO DATA
-────────────────────────────────────────────────────────────────── */
+// ★ DEPARTMENT AUTO-DETECTION FROM MACHINE
+// Injection = IM machines → Injection Team Lead
+// Assembly  = S/T/M/P machines → Assembly Team Lead
+const MACHINE_DEPT = {
+  IM00:'Injection',IM01:'Injection',IM02:'Injection',IM03:'Injection',
+  IM04:'Injection',IM05:'Injection',IM06:'Injection',IM07:'Injection',
+  IM08:'Injection',IM09:'Injection',IM10:'Injection',IM11:'Injection',
+  IM12:'Injection',IM13:'Injection',IM14:'Injection',IM15:'Injection',
+  S17:'Assembly',T18:'Assembly',M11:'Assembly',
+  P01:'Assembly',P02:'Assembly',P03:'Assembly',P04:'Assembly'
+};
+
+// Assembly machines — no mold, no cavities needed
+const ASSEMBLY_MACHINES = new Set(['S17','T18','M11','P01','P02','P03','P04']);
+
+// ★ PART OPTIONS PER MACHINE
+const PART_OPTIONS = {
+  IM00: ['PT Cap','Valve'],
+  IM01: ['Valve','PT Cap'],
+  IM02: ['PT Cap','Valve'],
+  IM03: ['Pushtap Body'],
+  IM04: ['Pushtap Body'],
+  IM05: ['Vitop Piston'],
+  IM06: ['Vitop Cap'],
+  IM07: ['Vitop Body'],
+  IM08: ['Vitop Body'],
+  IM09: ['Glands'],
+  IM10: ['Pushtap Body','Vitop Body'],
+  IM11: ['Pushtap Body'],
+  IM12: ['Pushtap Body'],
+  IM13: ['Pushtap Body'],
+  IM14: ['Stem','Valve'],
+  IM15: ['Stem','Valve'],
+  S17: ['Vitop Tap'], T18: ['Vitop Tap'], M11: ['Vitop Tap'],
+  P01: ['Pushtap'], P02: ['Pushtap'], P03: ['Pushtap'], P04: ['Pushtap']
+};
 const DEMO = [
-  {id:1,Title:'250102IM13',Status:'Closed',Part_Name:'PT Body',Machine_Number:'IM13',Mold_Range:'1B-16B',Cavities_Affected:'5',Issue_Reason:'Filament',Criticality:'Critical Issue',Assigned_Team:'Injection Team',Root_Cause_Type:'Process',Actions_Taken:'Lower heat zone #5 IM13',Shots_Validated:10,Corrected_By:'Injection Team',Correction_Date:'2025-01-02T12:20:00Z',Is_Closed:'Yes',QC_Notes:'',Quality_Approver:'Tonya Tilicke',Date_Closed:'2025-01-02T14:00:00Z',Created:'2025-01-02T11:45:00Z',Created_By:'Ruby Cedillo',Customer_Impact:'',Closed_Cavity:'No'},
-  {id:2,Title:'250106IM07A',Status:'Closed',Part_Name:'PT Body',Machine_Number:'IM07',Mold_Range:'249-264',Cavities_Affected:'256',Issue_Reason:'Flash Closing Internal',Criticality:'Critical Issue',Assigned_Team:'Mold Team',Root_Cause_Type:'Mold',Actions_Taken:'Repaired cavity — approved by Thibaut',Shots_Validated:5,Corrected_By:'Richard Anaya',Correction_Date:'2025-01-06T14:30:00Z',Is_Closed:'Yes',QC_Notes:'',Quality_Approver:'Tonya Tilicke',Date_Closed:'2025-01-06T16:00:00Z',Created:'2025-01-06T14:40:00Z',Created_By:'Juan Martinez',Customer_Impact:'',Closed_Cavity:'No'},
-  {id:3,Title:'250111IM08',Status:'Closed',Part_Name:'Vitop Body',Machine_Number:'IM08',Mold_Range:'153-168',Cavities_Affected:'163',Issue_Reason:'Flash Closing Internal',Criticality:'Next PM',Assigned_Team:'Injection Team',Root_Cause_Type:'Mold',Actions_Taken:'Tested in machine 10 — passed PM validation',Shots_Validated:15,Corrected_By:'Jose Ramos',Correction_Date:'2025-04-01T12:00:00Z',Is_Closed:'Yes',QC_Notes:'Monitored for 2 weeks post-fix',Quality_Approver:'Tonya Tilicke',Date_Closed:'2025-04-01T15:00:00Z',Created:'2025-01-11T13:30:00Z',Created_By:'Juan Martinez',Customer_Impact:'Possible dimensional defect',Closed_Cavity:'No'},
-  {id:4,Title:'250125IM07',Status:'Assigned',Part_Name:'Vitop Body',Machine_Number:'IM07',Mold_Range:'249-264',Cavities_Affected:'256, 257',Issue_Reason:'Flash Welding Lips',Criticality:'Next PM',Assigned_Team:'Mold Team',Root_Cause_Type:'Mold',Actions_Taken:'',Shots_Validated:null,Corrected_By:'',Correction_Date:null,Is_Closed:'No',QC_Notes:'',Quality_Approver:'',Date_Closed:null,Created:'2025-01-25T13:55:00Z',Created_By:'Juan Martinez',Customer_Impact:'',Closed_Cavity:'Yes'},
-  {id:5,Title:'250408IM08',Status:'Open',Part_Name:'Vitop Body',Machine_Number:'IM08',Mold_Range:'153-168',Cavities_Affected:'161, 165',Issue_Reason:'Coremark',Criticality:'Critical Issue',Assigned_Team:'',Root_Cause_Type:'Mold',Actions_Taken:'',Shots_Validated:null,Corrected_By:'',Correction_Date:null,Is_Closed:'No',QC_Notes:'',Quality_Approver:'',Date_Closed:null,Created:'2025-04-08T09:00:00Z',Created_By:'Ruby Cedillo',Customer_Impact:'Surface finish risk',Closed_Cavity:'No'},
-  {id:6,Title:'250320IM09',Status:'Corrected',Part_Name:'Gland',Machine_Number:'IM09',Mold_Range:'129-160',Cavities_Affected:'132, 140',Issue_Reason:'Flash Back Plate',Criticality:'Critical Issue',Assigned_Team:'Injection Team',Root_Cause_Type:'Process',Actions_Taken:'Adjusted spacer and process parameters',Shots_Validated:20,Corrected_By:'Jose Ramos',Correction_Date:'2025-03-21T15:00:00Z',Is_Closed:'No',QC_Notes:'',Quality_Approver:'',Date_Closed:null,Created:'2025-03-20T09:40:00Z',Created_By:'Juan Martinez',Customer_Impact:'Potential leak',Closed_Cavity:'No'},
+  {id:1,Title:'250102IM13',Status:'Closed',Created_By:'Ruby Cedillo',Part_Name:'PT Body',Machine_Number:'IM13',Mold_Range:'1B-16B',Cavities_Affected:'5',Issue_Reason:'Filament',Criticality:'Critical Issue',Assigned_Team:'Injection Process',Root_Cause_Type:'Process',Actions_Taken:'Lower heat zone #5 IM13',Shots_Validated:10,Corrected_By:'Injection Team',Correction_Date:'2025-01-02T12:20:00Z',Is_Closed:'Yes',QC_Notes:'',Quality_Approver:'Tonya Tilicke',Date_Closed:'2026-04-01T14:00:00Z',Created:'2026-04-01T11:45:00Z',Customer_Impact:'',Closed_Cavity:'No'},
+  {id:2,Title:'250106IM07A',Status:'Closed',Created_By:'Juan Martinez',Part_Name:'PT Body',Machine_Number:'IM07',Mold_Range:'249-264',Cavities_Affected:'256',Issue_Reason:'Flash Closing Internal',Criticality:'Critical Issue',Assigned_Team:'Injection Moulding',Root_Cause_Type:'Mold',Actions_Taken:'Repaired cavity — approved by Thibaut',Shots_Validated:5,Corrected_By:'Richard Anaya',Correction_Date:'2025-01-06T14:30:00Z',Is_Closed:'Yes',QC_Notes:'',Quality_Approver:'Tonya Tilicke',Date_Closed:'2025-01-06T16:00:00Z',Created:'2025-01-06T14:40:00Z',Customer_Impact:'',Closed_Cavity:'No'},
+  {id:3,Title:'250125IM07',Status:'Assigned',Created_By:'Juan Martinez',Part_Name:'Vitop Body',Machine_Number:'IM07',Mold_Range:'249-264',Cavities_Affected:'256, 257',Issue_Reason:'Flash Welding Lips',Criticality:'Next PM',Assigned_Team:'Injection Moulding',Root_Cause_Type:'Mold',Actions_Taken:'',Shots_Validated:null,Corrected_By:'',Correction_Date:null,Is_Closed:'No',QC_Notes:'',Quality_Approver:'',Date_Closed:null,Created:'2025-01-25T13:55:00Z',Customer_Impact:'',Closed_Cavity:'Yes'},
+  {id:4,Title:'250408IM08',Status:'Open',Created_By:'Ruby Cedillo',Part_Name:'Vitop Body',Machine_Number:'IM08',Mold_Range:'153-168',Cavities_Affected:'161, 165',Issue_Reason:'Coremark',Criticality:'Critical Issue',Assigned_Team:'',Root_Cause_Type:'Mold',Actions_Taken:'',Shots_Validated:null,Corrected_By:'',Correction_Date:null,Is_Closed:'No',QC_Notes:'',Quality_Approver:'',Date_Closed:null,Created:'2026-01-15T09:00:00Z',Customer_Impact:'Surface finish risk',Closed_Cavity:'No'},
+  {id:5,Title:'250320IM09',Status:'Corrected',Created_By:'Juan Martinez',Part_Name:'Gland',Machine_Number:'IM09',Mold_Range:'129-160',Cavities_Affected:'132, 140',Issue_Reason:'Flash Back Plate',Criticality:'Critical Issue',Assigned_Team:'Injection Process',Root_Cause_Type:'Process',Actions_Taken:'Adjusted spacer and process parameters',Shots_Validated:20,Corrected_By:'Jose Ramos',Correction_Date:'2026-02-11T15:00:00Z',Is_Closed:'No',QC_Notes:'',Quality_Approver:'',Date_Closed:null,Created:'2026-02-10T09:40:00Z',Customer_Impact:'Potential leak',Closed_Cavity:'No'},
 ];
 
-/* ─────────────────────────────────────────────────────────────────
-   STATE
-────────────────────────────────────────────────────────────────── */
-let allNCs = [];
-let currentNC = null;
-let currentUser = { name: 'Demo User', initials: 'DU' };
-let formDigest = null;
-let digestExpiry = 0;
+/* ── STATE ───────────────────────────────────── */
+let allNCs=[], currentNC=null, currentStep=1;
 
-/* ─────────────────────────────────────────────────────────────────
-   INIT
-────────────────────────────────────────────────────────────────── */
-window.addEventListener('DOMContentLoaded', () => {
+/* ── INIT ────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded',()=>{
   showView('splash');
-  if (CONFIG.demoMode) {
-    renderDemoCard();
-  } else {
-    autoLogin();
-  }
+  buildRepGrid();
+  setTimeout(loadAndShow, CONFIG.demoMode?900:300);
 });
 
-function renderDemoCard() {
-  document.getElementById('splash-inner').innerHTML = `
-    <div class="demo-card">
-      <div class="splash-title" style="font-size:16px;">Demo Mode Active</div>
-      <p>
-        <strong>CONFIG.demoMode = true</strong><br/>
-        The app is running with sample data.<br/>
-        To connect to your SharePoint list, set<br/>
-        <strong>demoMode: false</strong> and fill in <strong>siteUrl</strong>.
-      </p>
-      <button class="btn btn-primary" onclick="enterDemo()" style="margin-top:4px;">
-        Enter Demo →
-      </button>
-    </div>`;
+function buildRepGrid(){
+  document.getElementById('rep-grid').innerHTML = STAFF.map(n=>{
+    const ini=n.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
+    return `<button class="rep-btn" onclick="selRep('${n}',this)"><div class="rep-av">${ini}</div><span>${n}</span></button>`;
+  }).join('');
 }
 
-function enterDemo() {
-  currentUser = { name: 'Demo User (QC Tech)', initials: 'DU' };
-  onAuthenticated();
+function selRep(name,btn){
+  document.querySelectorAll('.rep-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('w-rep').value=name;
 }
 
-async function autoLogin() {
-  document.getElementById('splash-inner').innerHTML = `
-    <div class="splash-spinner"></div>
-    <div class="splash-status" id="splash-status">Connecting to SharePoint…</div>`;
-  try {
-    setSplashStatus('Loading user profile…');
-    const res = await spGet('web/currentuser');
-    const name = res.Title || res.LoginName || 'Unknown User';
-    currentUser = {
-      name,
-      initials: name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()
-    };
-    setSplashStatus('Fetching form digest…');
-    await refreshDigest();
-    onAuthenticated();
-  } catch(e) {
-    document.getElementById('splash-inner').innerHTML = `
-      <div class="demo-card">
-        <div style="font-size:28px;margin-bottom:10px;">⚠</div>
-        <div class="splash-title" style="font-size:15px;color:#F5B8A0;">Connection Error</div>
-        <p>${e.message || 'Could not connect to SharePoint.'}<br/><br/>
-        Make sure this file is uploaded to your SharePoint site and you are signed in.</p>
-      </div>`;
-  }
-}
-
-function setSplashStatus(msg) {
-  const el = document.getElementById('splash-status');
-  if (el) el.textContent = msg;
-}
-
-function onAuthenticated() {
-  document.getElementById('nav-name').textContent = currentUser.name;
-  document.getElementById('nav-avatar').textContent = currentUser.initials;
-  document.getElementById('nav').classList.remove('hidden');
-  loadAndShow();
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   SHAREPOINT API  — same-origin, session cookie, no MSAL
-────────────────────────────────────────────────────────────────── */
-async function refreshDigest() {
-  const res = await fetch(`${SITE_URL}/_api/contextinfo`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { Accept: 'application/json;odata=nometadata', 'Content-Type': 'application/json' }
-  });
-  if (!res.ok) throw new Error(`Digest fetch failed: ${res.status}`);
-  const data = await res.json();
-  formDigest = data.FormDigestValue;
-  digestExpiry = Date.now() + 25 * 60 * 1000; // 25 min
-}
-
-async function getDigest() {
-  if (!formDigest || Date.now() >= digestExpiry) await refreshDigest();
-  return formDigest;
-}
-
-async function spGet(endpoint) {
-  const res = await fetch(`${SITE_URL}/_api/${endpoint}`, {
-    credentials: 'include',
-    headers: { Accept: 'application/json;odata=nometadata' }
-  });
-  if (!res.ok) throw new Error(`GET /_api/${endpoint} → ${res.status}`);
-  return res.json();
-}
-
-async function spPost(data) {
-  const digest = await getDigest();
-  const res = await fetch(
-    `${SITE_URL}/_api/web/lists/getbytitle('${CONFIG.listName}')/items`,
-    {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        Accept: 'application/json;odata=nometadata',
-        'Content-Type': 'application/json',
-        'X-RequestDigest': digest
-      },
-      body: JSON.stringify(data)
-    }
-  );
-  if (!res.ok) throw new Error(`POST failed: ${res.status} — ${await res.text()}`);
-  return res.json();
-}
-
-async function spPatch(id, data) {
-  const digest = await getDigest();
-  const res = await fetch(
-    `${SITE_URL}/_api/web/lists/getbytitle('${CONFIG.listName}')/items(${id})`,
-    {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: {
-        Accept: 'application/json;odata=nometadata',
-        'Content-Type': 'application/json',
-        'X-RequestDigest': digest,
-        'IF-MATCH': '*'
-      },
-      body: JSON.stringify(data)
-    }
-  );
-  if (!res.ok) throw new Error(`PATCH failed: ${res.status}`);
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   LOAD DATA
-────────────────────────────────────────────────────────────────── */
-async function loadAndShow() {
+/* ── DATA ────────────────────────────────────── */
+async function loadAndShow(){
   load(true);
-  try {
-    if (CONFIG.demoMode) {
-      allNCs = DEMO;
-    } else {
-      const r = await spGet(
-        `web/lists/getbytitle('${CONFIG.listName}')/items` +
-        `?$orderby=Created desc&$top=500`
-      );
-      allNCs = r.value || [];
+  try{
+    if(CONFIG.demoMode){
+      allNCs=DEMO;
+    }else{
+      const r=await fetch(CONFIG.flowGet,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+      if(!r.ok) throw new Error(`Flow error: ${r.status}`);
+      const d=await r.json();
+      allNCs=Array.isArray(d)?d:(d.value||[]);
     }
-    renderKPIs();
-    populateMachineFilter();
-    applyFilters();
-    document.getElementById('refresh-ts').textContent =
-      `— updated ${new Date().toLocaleTimeString()}`;
+    renderKPIs(); populateMachineFilter(); applyFilters();
+    document.getElementById('refresh-ts').textContent=`— updated ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
     showView('dashboard');
-  } catch(e) {
-    toast('err', 'Load Error', e.message);
+  }catch(e){
+    toast('err','Load Error',e.message);
+    allNCs=DEMO; renderKPIs(); populateMachineFilter(); applyFilters();
+    showView('dashboard');
   }
   load(false);
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   KPIs
-────────────────────────────────────────────────────────────────── */
-function renderKPIs() {
-  const now = new Date();
-  const mo = new Date(now.getFullYear(), now.getMonth(), 1);
-  const open = allNCs.filter(n => n.Status !== 'Closed').length;
-  const crit = allNCs.filter(n => n.Status !== 'Closed' && n.Criticality === 'Critical Issue').length;
-  const closedMo = allNCs.filter(n => n.Status === 'Closed' && new Date(n.Date_Closed||n.Created) >= mo).length;
-  const openList = allNCs.filter(n => n.Status !== 'Closed');
-  const avg = openList.length
-    ? Math.round(openList.reduce((s,n) => s + daysOpen(n), 0) / openList.length)
-    : 0;
-  set('k-open', open);
-  set('k-crit', crit);
-  set('k-closed', closedMo);
-  set('k-avg', avg + 'd');
+/* ── KPIs ────────────────────────────────────── */
+function renderKPIs(){
+  const now=new Date(), mo=new Date(now.getFullYear(),now.getMonth(),1);
+  const open=allNCs.filter(n=>n.Status!=='Closed').length;
+  const crit=allNCs.filter(n=>n.Status!=='Closed'&&n.Criticality==='Critical Issue').length;
+  const done=allNCs.filter(n=>n.Status==='Closed'&&new Date(n.Date_Closed||n.Created)>=mo).length;
+  const ol=allNCs.filter(n=>n.Status!=='Closed');
+  const avg=ol.length?Math.round(ol.reduce((s,n)=>s+daysOpen(n),0)/ol.length):0;
+  set('k-open',open);set('k-crit',crit);set('k-done',done);set('k-avg',avg+'d');
+  renderTeamKPIs();
+}
+function daysOpen(nc){
+  const s=new Date(nc.Created||nc.Date_Created);
+  const e=nc.Status==='Closed'&&nc.Date_Closed?new Date(nc.Date_Closed):new Date();
+  return Math.max(0,Math.floor((e-s)/86400000));
 }
 
-function daysOpen(nc) {
-  const s = new Date(nc.Created||nc.Date_Created);
-  const e = nc.Status==='Closed' && nc.Date_Closed ? new Date(nc.Date_Closed) : new Date();
-  return Math.max(0, Math.floor((e-s)/86400000));
+/* ── FILTERS ─────────────────────────────────── */
+function populateMachineFilter(){
+  const sel=document.getElementById('ff-ma');
+  const ms=[...new Set(allNCs.map(n=>n.Machine_Number).filter(Boolean))].sort();
+  sel.innerHTML='<option value="">All Machines</option>'+ms.map(m=>`<option>${m}</option>`).join('');
 }
-
-/* ─────────────────────────────────────────────────────────────────
-   FILTERS & TABLE
-────────────────────────────────────────────────────────────────── */
-function populateMachineFilter() {
-  const sel = document.getElementById('ff-machine');
-  const machines = [...new Set(allNCs.map(n=>n.Machine_Number).filter(Boolean))].sort();
-  sel.innerHTML = '<option value="">All Machines</option>' +
-    machines.map(m=>`<option>${m}</option>`).join('');
-}
-
-function applyFilters() {
-  const q  = document.getElementById('fs').value.toLowerCase();
-  const st = document.getElementById('ff-status').value;
-  const cr = document.getElementById('ff-crit').value;
-  const ma = document.getElementById('ff-machine').value;
-  const te = document.getElementById('ff-team').value;
-  const filtered = allNCs.filter(nc => {
-    if (q  && !`${nc.Title} ${nc.Part_Name} ${nc.Issue_Reason} ${nc.Cavities_Affected}`.toLowerCase().includes(q)) return false;
-    if (st && nc.Status !== st) return false;
-    if (cr && nc.Criticality !== cr) return false;
-    if (ma && nc.Machine_Number !== ma) return false;
-    if (te && nc.Assigned_Team !== te) return false;
+function applyFilters(){
+  const q=document.getElementById('fs').value.toLowerCase();
+  const st=document.getElementById('ff-st').value;
+  const cr=document.getElementById('ff-cr').value;
+  const ma=document.getElementById('ff-ma').value;
+  const f=allNCs.filter(nc=>{
+    if(q&&!`${nc.Title} ${nc.Part_Name} ${nc.Issue_Reason} ${nc.Created_By}`.toLowerCase().includes(q))return false;
+    if(st&&nc.Status!==st)return false;
+    if(cr&&nc.Criticality!==cr)return false;
+    if(ma&&nc.Machine_Number!==ma)return false;
     return true;
   });
-  renderTable(filtered);
-  document.getElementById('tbl-count').innerHTML =
-    `<strong>${filtered.length}</strong> of ${allNCs.length} records`;
+  renderTable(f);
+  document.getElementById('tbl-cnt').innerHTML=`<strong>${f.length}</strong> of ${allNCs.length} records`;
 }
+function clearFilters(){['fs','ff-st','ff-cr','ff-ma'].forEach(id=>document.getElementById(id).value='');applyFilters();}
 
-function clearFilters() {
-  ['fs','ff-status','ff-crit','ff-machine','ff-team'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  applyFilters();
-}
-
-function renderTable(data) {
-  const tbody = document.getElementById('tbl-body');
-  if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-row">
-      <div class="empty-icon">🔍</div>
-      <div class="empty-text">No NCs match your filters.</div>
-    </div></td></tr>`;
-    return;
-  }
-  tbody.innerHTML = data.map(nc => {
-    const d = daysOpen(nc);
-    const chip = nc.Status==='Closed' ? `<span class="days-chip d-ok">${d}d</span>`
-      : d>7 ? `<span class="days-chip d-late">${d}d ⚠</span>`
-      : d>2 ? `<span class="days-chip d-warn">${d}d</span>`
-      :        `<span class="days-chip d-ok">${d}d</span>`;
-    return `<tr onclick="openDetail(${nc.id})">
+function renderTable(data){
+  const tb=document.getElementById('tbl-body');
+  if(!data.length){tb.innerHTML=`<tr><td colspan="10"><div class="empty-st"><div class="e-icon">🔍</div><div class="e-txt">No records match.</div></div></td></tr>`;return;}
+  tb.innerHTML=data.map(nc=>{
+    const d=daysOpen(nc);
+    const isOpen = nc.Status !== 'Closed';
+    const isCrit = nc.Criticality === 'Critical Issue';
+    const isOverdue = isOpen && d >= 30;
+    const rowCls = isOverdue ? 'row-overdue' : isCrit && isOpen ? 'row-critical' : isOpen ? 'row-open' : '';
+    const chip = nc.Status==='Closed' ? `<span class="dchip d-ok">${d}d</span>`
+      : isOverdue ? `<span class="overdue-badge">🔥 ${d}d OVERDUE</span>`
+      : d>7 ? `<span class="dchip d-late">${d}d ⚠</span>`
+      : d>2 ? `<span class="dchip d-warn">${d}d</span>`
+      : `<span class="dchip d-ok">${d}d</span>`;
+    return `<tr class="${rowCls}" onclick="openDetail(${nc.id})">
       <td class="mono">${nc.Title||'—'}</td>
       <td>${fmtDate(nc.Created)}</td>
+      <td>${nc.Created_By||'—'}</td>
       <td>${nc.Part_Name||'—'}</td>
       <td class="mono">${nc.Machine_Number||'—'}</td>
+      <td><span style="font-size:11px;font-weight:700;color:${nc.NC_Dept==='Assembly'?'var(--amber)':'var(--sw-blue)'}">${nc.NC_Dept||MACHINE_DEPT[nc.Machine_Number]||'—'}</span></td>
       <td>${nc.Issue_Reason||'—'}</td>
       <td>${critBadge(nc.Criticality)}</td>
       <td>${statusBadge(nc.Status)}</td>
-      <td style="font-size:12px;">${nc.Assigned_Team||'<span style="color:var(--gray-400)">—</span>'}</td>
       <td>${chip}</td>
-      <td><button class="btn btn-ghost btn-sm"
-            onclick="event.stopPropagation();openDetail(${nc.id})">View →</button></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openDetail(${nc.id})">View →</button></td>
     </tr>`;
   }).join('');
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   NEW NC FORM
-────────────────────────────────────────────────────────────────── */
-function initNewForm() {
-  const now = new Date();
-  set('new-created-by', currentUser.name);
-  set('new-date', now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
-    + ' ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
-  updateQNSPreview();
+/* ── WIZARD ──────────────────────────────────── */
+function startWizard(){wizardReset();showView('new-nc');}
+function wizardReset(){
+  currentStep=1;
+  ['w-rep','w-mach','w-mold','w-part','w-reason','w-cav','w-notes','w-crit','w-impact'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.value='';
+  });
+  document.getElementById('w-cc').value='No';
+  document.querySelectorAll('.rep-btn').forEach(b=>b.classList.remove('sel'));
+  puReset();
+  document.querySelectorAll('.crit-btn').forEach(b=>b.className='crit-btn');
+  ['w-mold','w-part'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.innerHTML='<option value="">— Select machine first —</option>';el.disabled=true;}
+  });
+  puReset();
+  updateWizardUI(1);
 }
 
-function onMachineChange() {
-  const m = document.getElementById('fn-machine').value;
-  document.getElementById('fn-mold').value = MOLD_MAP[m] || '';
-  updateQNSPreview();
+function goStep(n){
+  if(n>currentStep&&!validateStep(currentStep))return;
+  if(n===4)buildReview();
+  currentStep=n;
+  updateWizardUI(n);
 }
 
-function updateQNSPreview() {
-  const now = new Date();
-  const yy = String(now.getFullYear()).slice(2);
-  const mm = String(now.getMonth()+1).padStart(2,'0');
-  const dd = String(now.getDate()).padStart(2,'0');
-  const machine = document.getElementById('fn-machine').value || 'IMXX';
-  document.getElementById('new-id-preview').textContent = `${yy}${mm}${dd}${machine}`;
-}
-
-async function submitNC() {
-  const part     = document.getElementById('fn-part').value;
-  const machine  = document.getElementById('fn-machine').value;
-  const cavities = document.getElementById('fn-cavities').value.trim();
-  const reason   = document.getElementById('fn-reason').value;
-  const crit     = document.getElementById('fn-crit').value;
-  if (!part||!machine||!cavities||!reason||!crit) {
-    toast('err','Missing Fields','Please fill all required fields (★) before submitting.');
-    return;
+function validateStep(s){
+  if(s===1){
+    if(!document.getElementById('w-rep').value){toast('err','Required','Please select your name.');return false;}
+    const mach = document.getElementById('w-mach').value;
+    if(!mach){toast('err','Required','Please select a machine.');return false;}
+    const isAsm = ASSEMBLY_MACHINES.has(mach);
+    if(!isAsm && !document.getElementById('w-mold').value){toast('err','Required','Please select a mold.');return false;}
+    if(!document.getElementById('w-part').value){toast('err','Required','Please select a part name.');return false;}
   }
-  const now = new Date();
-  const yy  = String(now.getFullYear()).slice(2);
-  const mm  = String(now.getMonth()+1).padStart(2,'0');
-  const dd  = String(now.getDate()).padStart(2,'0');
-  const qnsId = `${yy}${mm}${dd}${machine}`;
-  const payload = {
-    Title:            qnsId,
-    Status:           'Open',
-    Part_Name:        part,
-    Machine_Number:   machine,
-    Mold_Range:       document.getElementById('fn-mold').value,
-    Cavities_Affected:cavities,
-    Issue_Reason:     reason,
-    Criticality:      crit,
-    Closed_Cavity:    document.getElementById('fn-closed-cav').value,
-    Root_Cause_Type:  document.getElementById('fn-root').value,
-    Customer_Impact:  document.getElementById('fn-impact').value,
-    Created_By:       currentUser.name
+  if(s===2){
+    if(!document.getElementById('w-reason').value){toast('err','Required','Please select an issue type.');return false;}
+    const mach2 = document.getElementById('w-mach').value;
+    if(!ASSEMBLY_MACHINES.has(mach2) && !document.getElementById('w-cav').value.trim()){
+      toast('err','Required','Please enter the affected cavities.');return false;
+    }
+  }
+  if(s===3){
+    if(!document.getElementById('w-crit').value){toast('err','Required','Please select a criticality level.');return false;}
+  }
+  return true;
+}
+
+function updateWizardUI(n){
+  for(let i=1;i<=4;i++){
+    document.getElementById(`step-${i}`).classList.toggle('active',i===n);
+    const ps=document.getElementById(`ps${i}`);
+    ps.classList.remove('active','done');
+    if(i<n)ps.classList.add('done');
+    if(i===n)ps.classList.add('active');
+    ps.querySelector('.ps-dot').textContent=i<n?'✓':i;
+  }
+  document.getElementById('pb').style.width=(n/4*100)+'%';
+  window.scrollTo(0,0);
+}
+
+function onMachineChange(){
+  const m = document.getElementById('w-mach').value;
+  const isAssembly = m && ASSEMBLY_MACHINES.has(m);
+  const dept = m ? (MACHINE_DEPT[m] || 'Injection') : '';
+
+  // Show dept badge next to machine
+  let deptBadge = document.getElementById('dept-badge');
+  if (!deptBadge) {
+    deptBadge = document.createElement('div');
+    deptBadge.id = 'dept-badge';
+    deptBadge.style.cssText = 'margin-top:8px;padding:6px 12px;border-radius:5px;font-size:12px;font-weight:700;display:inline-block;';
+    document.getElementById('w-mach').parentElement.appendChild(deptBadge);
+  }
+  if (m) {
+    deptBadge.style.display = 'inline-block';
+    deptBadge.style.background = isAssembly ? '#FFF3D6' : '#D6E8F5';
+    deptBadge.style.color = isAssembly ? '#B87800' : '#0066A1';
+    deptBadge.textContent = isAssembly ? '🔩 Assembly Department' : '⚙ Injection Department';
+  } else {
+    deptBadge.style.display = 'none';
+  }
+
+  // Show/hide mold row
+  const moldRow = document.getElementById('mold-row');
+  if (moldRow) moldRow.style.display = isAssembly ? 'none' : '';
+
+  // Show/hide cavities + closed cavity rows
+  const cavRow = document.getElementById('cav-row');
+  if (cavRow) cavRow.style.display = isAssembly ? 'none' : '';
+  const ccRow = document.getElementById('cc-row');
+  if (ccRow) ccRow.style.display = isAssembly ? 'none' : '';
+
+  // Populate molds (injection only)
+  const moldSel = document.getElementById('w-mold');
+  const moldHint = document.getElementById('mold-hint');
+  if (!isAssembly) {
+    const moldOpts = MOLD_OPTIONS[m] || [];
+    moldSel.innerHTML = '<option value="">— Select Mold —</option>' +
+      moldOpts.map(o=>`<option value="${o}">${o}</option>`).join('');
+    moldSel.disabled = !m || moldOpts.length === 0;
+    moldHint.textContent = moldOpts.length === 0 && m ? 'No molds configured' : 'Select the mold currently mounted';
+    if (moldOpts.length === 1) moldSel.value = moldOpts[0];
+  } else {
+    moldSel.value = '';
+    moldSel.disabled = true;
+  }
+
+  // Populate parts
+  const partSel = document.getElementById('w-part');
+  const partHint = document.getElementById('part-hint');
+  const partOpts = PART_OPTIONS[m] || [];
+  partSel.innerHTML = '<option value="">— Select Part —</option>' +
+    partOpts.map(o=>`<option value="${o}">${o}</option>`).join('');
+  partSel.disabled = !m || partOpts.length === 0;
+  partHint.textContent = partOpts.length === 0 && m ? 'No parts configured' : 'Select the part being produced';
+  if (partOpts.length === 1) partSel.value = partOpts[0];
+}
+
+function selCrit(val){
+  document.getElementById('w-crit').value=val;
+  document.querySelectorAll('.crit-btn').forEach(b=>b.className='crit-btn');
+  const m={'Critical Issue':['cb-crit','cb-crit'],'Next PM':['cb-next','cb-next'],'End of Run':['cb-end','cb-end']};
+  const idm={'Critical Issue':'cb-crit','Next PM':'cb-next','End of Run':'cb-end'};
+  const clm={'Critical Issue':'cb-crit','Next PM':'cb-next','End of Run':'cb-end'};
+  document.getElementById(idm[val]).classList.add(clm[val]);
+}
+
+function buildReview(){
+  const now=new Date();
+  const yy=String(now.getFullYear()).slice(2);
+  const mm=String(now.getMonth()+1).padStart(2,'0');
+  const dd=String(now.getDate()).padStart(2,'0');
+  const mach=document.getElementById('w-mach').value||'IMXX';
+  const isAsm = ASSEMBLY_MACHINES.has(mach);
+  document.getElementById('rv-id').textContent=`${yy}${mm}${dd}${mach}`;
+  set('rv-rep',document.getElementById('w-rep').value);
+  set('rv-mach',document.getElementById('w-mach').value + ' — ' + (isAsm?'🔩 Assembly':'⚙ Injection'));
+  set('rv-mold',isAsm ? 'N/A (Assembly)' : (document.getElementById('w-mold').value||'—'));
+  set('rv-part',document.getElementById('w-part').value);
+  set('rv-reason',document.getElementById('w-reason').value);
+  set('rv-cav',isAsm ? 'N/A (Assembly)' : document.getElementById('w-cav').value);
+  const rvCcRow = document.getElementById('rv-cc-row');
+  if (rvCcRow) rvCcRow.style.display = isAsm ? 'none' : '';
+  if (!isAsm) set('rv-cc',document.getElementById('w-cc').value);
+  set('rv-crit',document.getElementById('w-crit').value);
+  set('rv-impact',document.getElementById('w-impact').value||'—');
+  const pw = document.getElementById('rv-photo-wrap');
+  if (photoBase64) {
+    pw.innerHTML = `<img src="${photoBase64}" style="width:80px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--gray-200);">`;
+  } else {
+    pw.textContent = 'No photo attached';
+  }
+}
+
+async function submitNC(){
+  const now=new Date();
+  const yy=String(now.getFullYear()).slice(2);
+  const mm=String(now.getMonth()+1).padStart(2,'0');
+  const dd=String(now.getDate()).padStart(2,'0');
+  const mach=document.getElementById('w-mach').value;
+  const qnsId=`${yy}${mm}${dd}${mach}`;
+  const isAssemblyMach = ASSEMBLY_MACHINES.has(mach);
+  const payload={
+    Title:qnsId, Status: isAssemblyMach ? 'Assigned' : 'Open',
+    NC_Dept: MACHINE_DEPT[mach] || 'Injection',
+    Assigned_Team: isAssemblyMach ? 'Assembly Team' : '',
+    Created_By:document.getElementById('w-rep').value,
+    Part_Name:document.getElementById('w-part').value,
+    Machine_Number:mach,
+    Mold_Range:isAssemblyMach ? '' : document.getElementById('w-mold').value,
+    Cavities_Affected:isAssemblyMach ? 'N/A' : document.getElementById('w-cav').value,
+    Issue_Reason:document.getElementById('w-reason').value,
+    Criticality:document.getElementById('w-crit').value,
+    Closed_Cavity:document.getElementById('w-cc').value,
+    Customer_Impact:document.getElementById('w-impact').value,
+    QC_Notes:document.getElementById('w-notes').value,
+    Date_Created:now.toISOString(),
+    Photo_Base64: photoBase64 || ''
   };
   load(true);
-  try {
-    if (CONFIG.demoMode) {
-      allNCs.unshift({ ...payload, id: Date.now(), Created: now.toISOString() });
-      toast('ok','NC Submitted', `${qnsId} created (demo mode)`);
-    } else {
-      await spPost(payload);
-      toast('ok','NC Submitted', `${qnsId} logged — Team Lead has been notified.`);
+  try{
+    if(CONFIG.demoMode){
+      allNCs.unshift({...payload,id:Date.now(),Created:now.toISOString()});
+      toast('ok','NC Submitted',`${qnsId} created — Team Lead notified (demo mode)`);
+    }else{
+      const r=await fetch(CONFIG.flowCreate,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      if(!r.ok)throw new Error(`Flow error: ${r.status}`);
+      toast('ok','NC Submitted',`${qnsId} logged — Team Lead notified via Teams.`);
     }
-    // reset form
-    ['fn-part','fn-machine','fn-mold','fn-cavities','fn-reason','fn-crit','fn-root','fn-impact'].forEach(id=>{
-      document.getElementById(id).value = '';
-    });
-    document.getElementById('fn-closed-cav').value = 'No';
     await loadAndShow();
-  } catch(e) {
-    toast('err','Submit Failed', e.message);
-    load(false);
-  }
+  }catch(e){toast('err','Submit Failed',e.message);load(false);}
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   DETAIL
-────────────────────────────────────────────────────────────────── */
-function openDetail(id) {
-  currentNC = allNCs.find(n => n.id === id);
-  if (!currentNC) return;
+/* ── DETAIL ──────────────────────────────────── */
+function openDetail(id){
+  currentNC=allNCs.find(n=>n.id===id);
+  if(!currentNC)return;
   renderDetail(currentNC);
   showView('detail');
 }
-
-function renderDetail(nc) {
-  const s = nc.Status;
-  set('d-page-title', nc.Title);
-  document.getElementById('d-status-badge').innerHTML = statusBadge(s);
-
-  // Info panel
-  set('d-part',        nc.Part_Name);
-  setMono('d-machine', nc.Machine_Number);
-  set('d-mold',        nc.Mold_Range);
-  set('d-cav',         nc.Cavities_Affected);
-  set('d-reason',      nc.Issue_Reason);
-  document.getElementById('d-crit').innerHTML = critBadge(nc.Criticality);
-  set('d-cav-closed',  nc.Closed_Cavity||'No');
-  set('d-root',        nc.Root_Cause_Type||'—');
-  set('d-impact',      nc.Customer_Impact||'—');
-  set('d-created-by',  nc.Created_By||'—');
-
-  // Sidebar
-  setMono('d-sb-id',   nc.Title);
-  setMono('d-sb-date', fmtDate(nc.Created));
-  document.getElementById('d-sb-days').innerHTML = daysChip(nc);
-  set('d-sb-root',     nc.Root_Cause_Type||'—');
-
-  // Section visibility
-  vis('sec-routing',   s === 'Open');
-  vis('sec-correction',s === 'Assigned' || s === 'In Progress');
-  vis('sec-verify',    s === 'Corrected');
-  vis('sec-closed',    s === 'Closed');
-
-  // Correction: show existing data if re-editing
-  if (s === 'Assigned' || s === 'In Progress') {
-    const has = !!nc.Actions_Taken;
-    vis('corr-existing', has);
-    vis('corr-sep',      has);
-    if (has) {
-      set('d-assigned-team',   nc.Assigned_Team||'—');
-      set('d-assigned-person', nc.Assigned_Person||'—');
-      set('d-actions',         nc.Actions_Taken);
-    }
+function renderDetail(nc){
+  const s=nc.Status;
+  set('d-ttl',nc.Title);
+  document.getElementById('d-badge').innerHTML=statusBadge(s);
+  set('d-rep',nc.Created_By||'—');set('d-part',nc.Part_Name);
+  setMono('d-mach',nc.Machine_Number);set('d-mold',nc.Mold_Range);
+  set('d-cav',nc.Cavities_Affected);set('d-reason',nc.Issue_Reason);
+  document.getElementById('d-crit').innerHTML=critBadge(nc.Criticality);
+  set('d-cc',nc.Closed_Cavity||'No');
+  set('d-ncdept',nc.NC_Dept||'—');
+  set('d-impact',nc.Customer_Impact||'—');set('d-notes',nc.QC_Notes||'—');
+  setMono('d-sid',nc.Title);setMono('d-sdate',fmtDate(nc.Created));
+  document.getElementById('d-sdays').innerHTML=daysChip(nc);
+  if (nc.Photo_Base64) {
+    document.getElementById('d-photo-img').src = nc.Photo_Base64;
+    document.getElementById('d-photo-row').style.display = 'flex';
+  } else {
+    document.getElementById('d-photo-row').style.display = 'none';
   }
-
-  // Verification panel
-  if (s === 'Corrected') {
-    set('d-actions-qc',  nc.Actions_Taken||'—');
-    setMono('d-shots-qc',nc.Shots_Validated != null ? nc.Shots_Validated : '—');
-    set('d-corrected-by',nc.Corrected_By||'—');
-    setMono('d-corr-date',fmtDate(nc.Correction_Date));
+  const ncDept = nc.NC_Dept || (nc.Machine_Number && MACHINE_DEPT[nc.Machine_Number]) || 'Injection';
+  const isAsmNC = ncDept === 'Assembly';
+  // Assembly NCs skip routing — they go straight to assigned status
+  vis('s-route', s==='Open' && !isAsmNC);
+  vis('s-corr', s==='Assigned' || s==='In Progress');
+  vis('s-verify',s==='Corrected');vis('s-closed',s==='Closed');
+  // Reset route buttons
+  document.querySelectorAll('#rb-proc,#rb-mold').forEach(b=>b.classList.remove('sel'));
+  // Show auto-detected dept in routing info
+  const deptLabel = document.getElementById('r-dept-label');
+  if(deptLabel){
+    const ncDeptVal = nc.NC_Dept || (nc.Machine_Number && MACHINE_DEPT[nc.Machine_Number]) || '—';
+    deptLabel.textContent = ncDeptVal === 'Assembly' ? '🔩 Assembly' : ncDeptVal === 'Injection' ? '⚙ Injection' : '—';
   }
-
-  // Closed summary
-  if (s === 'Closed') {
-    set('d-s-actions',    nc.Actions_Taken||'—');
-    setMono('d-s-shots',  nc.Shots_Validated != null ? nc.Shots_Validated : '—');
-    set('d-s-corrby',     nc.Corrected_By||'—');
-    setMono('d-s-corrdate',fmtDate(nc.Correction_Date));
-    set('d-s-team',       nc.Assigned_Team||'—');
-    set('d-s-qcnotes',    nc.QC_Notes||'—');
-    set('d-s-qcapprover', nc.Quality_Approver||'—');
-    setMono('d-s-dateclosed',fmtDate(nc.Date_Closed));
+  const rTeamEl = document.getElementById('r-team');
+  if(nc.Assigned_Team==='Injection Process'){const el=document.getElementById('rb-proc');if(el)el.classList.add('sel');}
+  if(nc.Assigned_Team==='Injection Moulding'){const el=document.getElementById('rb-mold');if(el)el.classList.add('sel');}
+  if(rTeamEl&&nc.Assigned_Team) rTeamEl.value=nc.Assigned_Team;
+  if(s==='Assigned'||s==='In Progress'){
+    set('d-at',nc.Assigned_Team||'—');set('d-ap',nc.Assigned_Person||'—');
+    // Hide shots for assembly
+    const shotsRow = document.getElementById('shots-row');
+    if(shotsRow) shotsRow.style.display = isAsmNC ? 'none' : '';
   }
-
-  buildTimeline(nc);
-  buildSidebarActions(nc);
+  // Always render correction history regardless of status
+  renderCorrectionHistory(nc);
+  if(s==='Corrected'){
+    set('d-aqc',nc.Actions_Taken||'—');
+    setMono('d-sqc',nc.Shots_Validated!=null?nc.Shots_Validated:'—');
+    const sqcRow=document.getElementById('sqc-row');
+    if(sqcRow)sqcRow.style.display=isAsmNC?'none':'';
+    set('d-cby',nc.Corrected_By||'—');
+    setMono('d-cdt',fmtDate(nc.Correction_Date));
+    renderQCHistory(nc);
+  }
+  if(s==='Closed'){set('d-sa',nc.Actions_Taken||'—');
+    const corrLog = nc.Correction_Log ? JSON.parse(nc.Correction_Log) : [];
+    set('d-sa-count', corrLog.length > 0 ? `${corrLog.length} correction ${corrLog.length===1?'entry':'entries'} logged` : '—');setMono('d-ss',nc.Shots_Validated!=null?nc.Shots_Validated:'—');set('d-scb',nc.Corrected_By||'—');setMono('d-scd',fmtDate(nc.Correction_Date));set('d-st',nc.Assigned_Team||'—');set('d-sqn',nc.QC_Notes||'—');set('d-sqa',nc.Quality_Approver||'—');setMono('d-sdc',fmtDate(nc.Date_Closed));}
+  buildTimeline(nc);buildSidebarActions(nc);
 }
-
-function buildTimeline(nc) {
-  const order = ['Open','Assigned','In Progress','Corrected','Closed'];
-  const si = order.indexOf(nc.Status);
-  const steps = [
-    { label:'NC Created',              meta: `${fmtDate(nc.Created)}${nc.Created_By?' · '+nc.Created_By:''}` },
-    { label:'Routed by Team Lead',     meta: nc.Assigned_Team ? '→ '+nc.Assigned_Team : '' },
-    { label:'Investigation In Progress',meta: '' },
-    { label:'Correction Submitted',    meta: nc.Corrected_By ? '· '+nc.Corrected_By : '' },
-    { label:'Closed by Quality',       meta: nc.Quality_Approver ? '· '+nc.Quality_Approver : '' },
+function buildTimeline(nc){
+  const order=['Open','Assigned','In Progress','Corrected','Closed'];
+  const si=order.indexOf(nc.Status);
+  const steps=[
+    {l:'NC Created',m:`${fmtDate(nc.Created)}${nc.Created_By?' · '+nc.Created_By:''}`},
+    {l:'Routed by Team Lead',m:nc.Assigned_Team?'→ '+nc.Assigned_Team:''},
+    {l:'Investigation In Progress',m:''},
+    {l:'Correction Submitted',m:nc.Corrected_By?'· '+nc.Corrected_By:''},
+    {l:'Closed by Quality',m:nc.Quality_Approver?'· '+nc.Quality_Approver:''},
   ];
-  document.getElementById('detail-timeline').innerHTML = steps.map((step,i) => {
-    const done   = i < si;
-    const active = i === si;
-    return `<div class="tl-step">
-      <div class="tl-dot ${done?'done':active?'active':''}">${done?'✓':i+1}</div>
-      <div class="tl-content">
-        <div class="tl-title" style="color:${done||active?'var(--gray-900)':'var(--gray-400)'}">${step.label}</div>
-        ${step.meta?`<div class="tl-meta">${step.meta}</div>`:''}
-      </div>
-    </div>`;
+  document.getElementById('d-tl').innerHTML=steps.map((s,i)=>{
+    const done=i<si,active=i===si;
+    return `<div class="tl-s"><div class="tl-d ${done?'done':active?'active':''}">${done?'✓':i+1}</div><div class="tl-c"><div class="tl-t" style="color:${done||active?'var(--gray-800)':'var(--gray-400)'}">${s.l}</div>${s.m?`<div class="tl-m">${s.m}</div>`:''}</div></div>`;
   }).join('');
 }
-
-function buildSidebarActions(nc) {
-  const s = nc.Status;
-  let html = '';
-  if (s === 'Open')
-    html += `<button class="btn btn-amber" onclick="scrollTo('#sec-routing')">Route NC →</button>`;
-  if (s === 'Assigned' || s === 'In Progress')
-    html += `<button class="btn btn-green" onclick="scrollTo('#sec-correction')">Log Correction →</button>`;
-  if (s === 'Corrected')
-    html += `<button class="btn btn-crimson" onclick="scrollTo('#sec-verify')">QC Sign-Off →</button>`;
-  if (s !== 'Closed')
-    html += `<button class="btn btn-danger btn-sm" onclick="escalateNC()">⚑ Escalate</button>`;
-  html += `<button class="btn btn-ghost btn-sm" onclick="showView('dashboard')">← Dashboard</button>`;
-  document.getElementById('sb-actions').innerHTML = html;
+function buildSidebarActions(nc){
+  const s=nc.Status;
+  const ncDept2 = nc.NC_Dept || (nc.Machine_Number && MACHINE_DEPT[nc.Machine_Number]) || 'Injection';
+  const isAsmNC = ncDept2 === 'Assembly';
+  let h='';
+  if(s==='Open' && !isAsmNC)h+=`<button class="btn btn-amber" onclick="document.getElementById('r-team').focus()">Route NC →</button>`;
+  if(s==='Open' && isAsmNC)h+=`<div style="padding:10px 12px;background:var(--amber-lt);border-radius:var(--radius-sm);font-size:12px;font-weight:600;color:var(--amber);">🔩 Assembly Team notified via Teams</div>`;
+  if(s==='Assigned'||s==='In Progress')h+=`<button class="btn btn-green" onclick="document.getElementById('c-act').focus()">Log Correction →</button>`;
+  if(s==='Corrected')h+=`<button class="btn btn-crimson" onclick="document.getElementById('v-notes').focus()">QC Sign-Off →</button>`;
+  h+=`<button class="btn btn-ghost btn-sm" onclick="showView('dashboard')">← Dashboard</button>`;
+  document.getElementById('sb-acts').innerHTML=h;
 }
 
-function scrollTo(sel) {
-  const el = document.querySelector(sel);
-  if (el) el.scrollIntoView({ behavior:'smooth', block:'center' });
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   NC ACTIONS
-────────────────────────────────────────────────────────────────── */
-async function routeNC() {
+/* ── NC ACTIONS ──────────────────────────────── */
+async function routeNC(){
   const team = document.getElementById('r-team').value;
-  if (!team) { toast('err','Required','Select a team first.'); return; }
-  await saveUpdate(
-    { Status:'Assigned', Assigned_Team:team, Assigned_Person:document.getElementById('r-person').value, Routing_Date:new Date().toISOString() },
-    'NC Routed', `Assigned to ${team}`
-  );
+  if(!team){toast('err','Required','Select Injection Process or Injection Moulding.');return;}
+  const dept = currentNC.NC_Dept || (currentNC.Machine_Number && MACHINE_DEPT[currentNC.Machine_Number]) || 'Injection';
+  await saveUpdate({
+    id:currentNC.id, Status:'Assigned', Assigned_Team:team,
+    NC_Dept: dept,
+    Assigned_Person:document.getElementById('r-person').value,
+    Routing_Date:new Date().toISOString()
+  },'NC Routed',`Assigned to ${team} — ${dept} dept Teams notified.`);
 }
-
-async function submitCorrection() {
-  const actions = document.getElementById('c-actions').value.trim();
-  const shots   = document.getElementById('c-shots').value;
-  const corrected = document.getElementById('c-corrected').value;
-  if (!actions) { toast('err','Required','Describe the corrective actions taken.'); return; }
-  if (!shots)   { toast('err','Required','Enter the number of shots validated.'); return; }
-  await saveUpdate(
-    { Status: corrected==='Yes'?'Corrected':'In Progress', Actions_Taken:actions,
-      Shots_Validated:parseInt(shots), Corrected_By:currentUser.name,
-      Correction_Date:new Date().toISOString(), Issue_Corrected:corrected },
-    'Correction Submitted',
-    corrected==='Yes' ? 'Sent to Quality for review.' : 'NC marked In Progress.'
-  );
+async function submitCorrection(){
+  const actions=document.getElementById('c-act').value.trim();
+  const shots=document.getElementById('c-shots').value;
+  const corr=document.getElementById('c-corr').value;
+  if(!actions){toast('err','Required','Describe the corrective actions.');return;}
+  const ncDeptCorr = currentNC.NC_Dept || (currentNC.Machine_Number && MACHINE_DEPT[currentNC.Machine_Number]) || 'Injection';
+  if(ncDeptCorr !== 'Assembly' && !shots){toast('err','Required','Enter number of shots validated.');return;}
+  // Append to history log
+  const now = new Date();
+  const existing = currentNC.Correction_Log ? JSON.parse(currentNC.Correction_Log) : [];
+  existing.push({
+    date: now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+    by: currentNC.Assigned_Team||'Team',
+    actions, shots: parseInt(shots), resolved: corr
+  });
+  await saveUpdate({
+    id:currentNC.id,
+    Status: corr==='Yes'?'Corrected':'In Progress',
+    Actions_Taken: actions,
+    Shots_Validated: parseInt(shots),
+    Corrected_By: currentNC.Assigned_Team||'Team',
+    Correction_Date: now.toISOString(),
+    Correction_Log: JSON.stringify(existing)
+  }, corr==='Yes'?'Correction Submitted':'Progress Logged',
+     corr==='Yes'?'Sent to Quality for review.':'Entry saved — log another correction when ready.');
+  document.getElementById('c-act').value='';
+  document.getElementById('c-shots').value='';
 }
-
-async function submitVerification() {
+async function submitVerification(){
+  const appr = document.getElementById('v-appr').value;
   const close = document.getElementById('v-close').value;
-  await saveUpdate(
-    { Status:close==='Yes'?'Closed':'Assigned', Is_Closed:close,
-      QC_Notes:document.getElementById('v-notes').value,
-      Quality_Approver:currentUser.name,
-      Date_Closed:close==='Yes'?new Date().toISOString():null },
-    'QC Sign-Off Complete',
-    close==='Yes' ? 'NC is now closed.' : 'NC reopened and re-assigned.'
-  );
+  if(!appr){toast('err','Required','Please select a QC approver.');return;}
+  const now = new Date();
+  const qcLog = currentNC.QC_Review_Log ? JSON.parse(currentNC.QC_Review_Log) : [];
+  qcLog.push({
+    date: now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+    approver: appr, closed: close,
+    notes: document.getElementById('v-notes').value
+  });
+  const msg = close==='Yes'?`NC closed by ${appr}.`:`NC reopened — sent back to ${currentNC.Assigned_Team||'team'} for further action.`;
+  await saveUpdate({
+    id:currentNC.id,
+    Status: close==='Yes'?'Closed':'Assigned',
+    Is_Closed: close,
+    QC_Notes: document.getElementById('v-notes').value,
+    Quality_Approver: appr,
+    QC_Review_Log: JSON.stringify(qcLog),
+    Date_Closed: close==='Yes'?now.toISOString():''
+  },'QC Sign-Off Complete', msg);
+  // Reset form
+  document.getElementById('v-notes').value='';
+  document.getElementById('v-appr').value='';
 }
-
-async function escalateNC() {
-  if (!confirm('Escalate this NC? The supervisor will be notified.')) return;
-  await saveUpdate({ Status:'Escalated' }, 'NC Escalated', 'Supervisor notified.');
-}
-
-async function saveUpdate(patch, title, msg) {
+async function saveUpdate(patch,title,msg){
   load(true);
-  try {
-    if (CONFIG.demoMode) {
-      Object.assign(currentNC, patch);
-    } else {
-      await spPatch(currentNC.id, patch);
-      Object.assign(currentNC, patch);
+  try{
+    if(CONFIG.demoMode){Object.assign(currentNC,patch);}
+    else{
+      const r=await fetch(CONFIG.flowUpdate,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});
+      if(!r.ok)throw new Error(`Flow error: ${r.status}`);
+      Object.assign(currentNC,patch);
     }
-    renderDetail(currentNC);
-    toast('ok', title, msg);
-  } catch(e) {
-    toast('err','Save Failed', e.message);
-  }
+    renderDetail(currentNC);toast('ok',title,msg);
+  }catch(e){toast('err','Save Failed',e.message);}
   load(false);
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   ROUTER
-────────────────────────────────────────────────────────────────── */
-function showView(name) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+/* ── ROUTER ──────────────────────────────────── */
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
-  if (name === 'new-nc') initNewForm();
-  if (name !== 'splash' && name !== 'dashboard') window.scrollTo(0,0);
+  document.getElementById('nav').classList.toggle('hidden',name==='splash');
+  if(name!=='splash'&&name!=='dashboard')window.scrollTo(0,0);
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   BADGE HELPERS
-────────────────────────────────────────────────────────────────── */
-function statusBadge(s) {
-  const map = {
-    'Open':'b-open','Assigned':'b-assigned','In Progress':'b-progress',
-    'Corrected':'b-corrected','Closed':'b-closed','Escalated':'b-escalated'
-  };
-  return `<span class="badge ${map[s]||'b-open'}"><span class="badge-dot"></span>${s||'Open'}</span>`;
-}
-function critBadge(c) {
-  const map = {'Critical Issue':'c-critical','Next PM':'c-nextpm','End of Run':'c-endrun'};
-  return `<span class="badge ${map[c]||'c-endrun'}"><span class="badge-dot"></span>${c||'—'}</span>`;
-}
-function daysChip(nc) {
-  const d = daysOpen(nc);
-  const cls = nc.Status==='Closed'?'d-ok':d>7?'d-late':d>2?'d-warn':'d-ok';
-  return `<span class="days-chip ${cls}">${d}d${nc.Status!=='Closed'&&d>7?' ⚠':''}</span>`;
-}
+/* ── BADGES ──────────────────────────────────── */
+function statusBadge(s){const m={Open:'b-open',Assigned:'b-asgn','In Progress':'b-prog',Corrected:'b-corr',Closed:'b-clos',Escalated:'b-esc'};return `<span class="badge ${m[s]||'b-open'}"><span class="bdot"></span>${s||'Open'}</span>`;}
+function critBadge(c){const m={'Critical Issue':'c-crit','Next PM':'c-next','End of Run':'c-end'};return `<span class="badge ${m[c]||'c-end'}"><span class="bdot"></span>${c||'—'}</span>`;}
+function daysChip(nc){const d=daysOpen(nc);const cls=nc.Status==='Closed'?'d-ok':d>7?'d-late':d>2?'d-warn':'d-ok';return `<span class="dchip ${cls}">${d}d${nc.Status!=='Closed'&&d>7?' ⚠':''}</span>`;}
 
-/* ─────────────────────────────────────────────────────────────────
-   DOM HELPERS
-────────────────────────────────────────────────────────────────── */
-function set(id,v)     { const el=document.getElementById(id); if(el) el.textContent = v??'—'; }
-function setMono(id,v) { const el=document.getElementById(id); if(el){el.textContent=v??'—';el.classList.add('mono');}}
-function vis(id,show)  { const el=document.getElementById(id); if(el) el.style.display=show?'':'none'; }
-function load(on)      { document.getElementById('loader').classList.toggle('on',on); }
-function fmtDate(d) {
-  if (!d) return '—';
-  try { return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
-  catch { return '—'; }
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   TOAST
-────────────────────────────────────────────────────────────────── */
-function toast(type, title, msg='') {
-  const icons = { ok:'✓', err:'✕', info:'ℹ' };
-  const cls   = { ok:'t-ok', err:'t-err', info:'t-info' };
-  const el = document.createElement('div');
-  el.className = `toast ${cls[type]||'t-info'}`;
-  el.innerHTML = `<div class="toast-icon">${icons[type]||'ℹ'}</div>
-    <div><div class="toast-title">${title}</div>${msg?`<div class="toast-msg">${msg}</div>`:''}</div>`;
+/* ── HELPERS ─────────────────────────────────── */
+function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v??'—';}
+function setMono(id,v){const e=document.getElementById(id);if(e){e.textContent=v??'—';e.classList.add('mono');}}
+function vis(id,show){const e=document.getElementById(id);if(e)e.style.display=show?'':'none';}
+function load(on){document.getElementById('loader').classList.toggle('on',on);}
+function fmtDate(d){if(!d)return'—';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch{return'—';}}
+function toast(type,title,msg=''){
+  const icons={ok:'✓',err:'✕',info:'ℹ'},cls={ok:'t-ok',err:'t-err',info:'t-info'};
+  const el=document.createElement('div');
+  el.className=`toast ${cls[type]||'t-info'}`;
+  el.innerHTML=`<div class="t-icon">${icons[type]||'ℹ'}</div><div><div class="t-title">${title}</div>${msg?`<div class="t-msg">${msg}</div>`:''}</div>`;
   document.getElementById('toast-area').appendChild(el);
-  setTimeout(() => el.remove(), 4500);
+  setTimeout(()=>el.remove(),5000);
 }
+
+/* ── PHOTO UPLOAD ────────────────────────────── */
+let photoBase64 = null;
+
+function puDrag(e, on) {
+  e.preventDefault();
+  document.getElementById('pu-area').classList.toggle('drag', on);
+}
+
+function puDrop(e) {
+  e.preventDefault();
+  puDrag(e, false);
+  const file = e.dataTransfer.files[0];
+  if (file) puProcess(file);
+}
+
+function puSelect(input) {
+  const file = input.files[0];
+  if (file) puProcess(file);
+}
+
+function puProcess(file) {
+  if (!file.type.match(/image\/(jpeg|jpg|png)/)) {
+    toast('err','Wrong file type','Please upload a JPEG or PNG photo.');
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    toast('err','File too large','Please use a photo under 5MB.');
+    return;
+  }
+  // Resize & compress using canvas
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const MAX = 1200;
+      let w = img.width, h = img.height;
+      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+      if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      photoBase64 = canvas.toDataURL('image/jpeg', 0.75);
+      // Show preview
+      document.getElementById('pu-img').src = photoBase64;
+      document.getElementById('pu-preview').style.display = 'block';
+      document.getElementById('pu-name').style.display = 'block';
+      document.getElementById('pu-name').textContent = '✓ ' + file.name;
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function puRemove() {
+  photoBase64 = null;
+  document.getElementById('w-photo').value = '';
+  document.getElementById('pu-preview').style.display = 'none';
+  document.getElementById('pu-name').style.display = 'none';
+  document.getElementById('pu-name').textContent = '';
+}
+
+function puReset() {
+  puRemove();
+}
+
+
+/* ── TEAM ROUTE SELECTOR ────────────────────── */
+function selRouteTeam(val, btn) {
+  document.querySelectorAll('#rb-proc,#rb-mold').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('r-team').value = val;
+}
+
+function selRouteDept(val, btn) {
+  // Show auto-detected dept in routing info
+  const deptLabel = document.getElementById('r-dept-label');
+  if(deptLabel){
+    const ncDeptVal = nc.NC_Dept || (nc.Machine_Number && MACHINE_DEPT[nc.Machine_Number]) || '—';
+    deptLabel.textContent = ncDeptVal === 'Assembly' ? '🔩 Assembly' : ncDeptVal === 'Injection' ? '⚙ Injection' : '—';
+  }
+  btn.classList.add('sel');
+}
+
+/* ── TEAM STATS KPIs ────────────────────────── */
+function renderTeamKPIs() {
+  const teams = { proc: 'Injection Process', mold: 'Injection Moulding' };
+  Object.entries(teams).forEach(([key, teamName]) => {
+    const teamNCs = allNCs.filter(n => n.Assigned_Team === teamName);
+    const closed  = teamNCs.filter(n => n.Status === 'Closed');
+    const open    = teamNCs.filter(n => n.Status !== 'Closed');
+    const avgDays = closed.length
+      ? Math.round(closed.reduce((s,n) => {
+          const start = new Date(n.Created);
+          const end   = n.Date_Closed ? new Date(n.Date_Closed) : new Date();
+          return s + Math.max(0, Math.floor((end-start)/86400000));
+        }, 0) / closed.length)
+      : 0;
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+    const total = teamNCs.filter(n => new Date(n.Created) >= twelveMonthsAgo).length;
+    set(`kt-${key}-avg`,  closed.length ? avgDays+'d' : '—');
+    set(`kt-${key}-open`, open.length);
+    set(`kt-${key}-total`,total);
+  });
+}
+
+/* ── CORRECTION HISTORY ─────────────────────── */
+function renderCorrectionHistory(nc) {
+  const log = nc.Correction_Log ? JSON.parse(nc.Correction_Log) : [];
+
+  // Helper to build log HTML
+  function buildLogHTML(log, isAsmNC) {
+    return log.map(e => `
+      <div class="history-entry he-correction">
+        <div class="he-meta">
+          <span class="he-badge he-b-corr">Correction</span>
+          <span>${e.date}</span>
+          <span>·</span><span>${e.by||'Team'}</span>
+          ${!isAsmNC && e.shots ? `<span>·</span><span>${e.shots} shots</span>` : ''}
+          ${e.resolved==='No'
+            ? '<span style="color:var(--amber);font-weight:600;">⚠ Not yet fixed</span>'
+            : '<span style="color:var(--green);font-weight:600;">✓ Fixed</span>'}
+        </div>
+        <div class="he-text">${e.actions}</div>
+      </div>`).join('');
+  }
+
+  const isAsmNC = nc.NC_Dept === 'Assembly' ||
+    (nc.Machine_Number && ASSEMBLY_MACHINES && ASSEMBLY_MACHINES.has(nc.Machine_Number));
+
+  // Render into inline container (Assigned/In Progress view)
+  const inlineContainer = document.getElementById('corr-history');
+  const inlineLog = document.getElementById('corr-history-log');
+  if (inlineContainer && inlineLog) {
+    if (!log.length) {
+      inlineContainer.style.display = 'none';
+    } else {
+      inlineContainer.style.display = 'block';
+      inlineLog.innerHTML = buildLogHTML(log, isAsmNC);
+    }
+  }
+
+  // Render into standalone card (always visible for Corrected / Closed / any status)
+  const cardContainer = document.getElementById('corr-history-card');
+  const cardLog = document.getElementById('corr-history-card-log');
+  if (cardContainer && cardLog) {
+    if (!log.length) {
+      cardContainer.style.display = 'none';
+    } else {
+      cardContainer.style.display = '';
+      cardLog.innerHTML = buildLogHTML(log, isAsmNC);
+    }
+  }
+}
+
+/* ── QC HISTORY (reopen log) ────────────────── */
+function renderQCHistory(nc) {
+  const log = nc.QC_Review_Log ? JSON.parse(nc.QC_Review_Log) : [];
+  const container = document.getElementById('qc-history');
+  const logEl = document.getElementById('qc-history-log');
+  if (!container || !logEl) return;
+  if (!log.length) { container.style.display='none'; return; }
+  container.style.display = 'block';
+  logEl.innerHTML = log.map(e => `
+    <div class="history-entry ${e.closed==='No'?'he-reopen':'he-correction'}">
+      <div class="he-meta">
+        <span class="he-badge ${e.closed==='No'?'he-b-reopen':'he-b-corr'}">${e.closed==='No'?'Reopened':'Approved'}</span>
+        <span>${e.date}</span>
+        <span>·</span><span>${e.approver}</span>
+        ${e.dept?`<span>·</span><span>${e.dept}</span>`:''}
+      </div>
+      ${e.notes?`<div class="he-text">${e.notes}</div>`:''}
+    </div>`).join('');
+}
+
 </script>
 </body>
 </html>
