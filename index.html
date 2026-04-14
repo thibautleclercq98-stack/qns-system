@@ -338,6 +338,75 @@ tbody tr.row-critical:hover, tbody tr.row-open:hover, tbody tr.row-overdue:hover
 .dept-btn:hover { border-color:var(--sw-blue); }
 .dept-btn.sel { border-color:var(--sw-blue);background:var(--sw-blue);color:var(--white); }
 .dept-btn .dept-icon { font-size:24px;display:block;margin-bottom:5px; }
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE RESPONSIVE
+═══════════════════════════════════════════════════════ */
+
+/* Nav — hide subtitle on small screens */
+@media(max-width:600px){
+  .nav-subtitle { display:none; }
+  .nav-app-name { font-size:14px; }
+  #nav { padding:0 12px; gap:8px; }
+  .nav-btn { padding:7px 11px; font-size:12px; }
+}
+
+/* Hide table on mobile, show cards instead */
+@media(max-width:700px){
+  .tbl-desktop { display:none !important; }
+  .tbl-mobile  { display:flex !important; }
+}
+@media(min-width:701px){
+  .tbl-desktop { display:block !important; }
+  .tbl-mobile  { display:none !important; }
+}
+
+/* Mobile NC cards */
+.tbl-mobile {
+  display:none;
+  flex-direction:column;
+  gap:10px;
+  padding:14px;
+}
+.nc-card {
+  background:var(--white);border-radius:var(--radius);
+  border:1px solid var(--gray-100);padding:14px 16px;
+  box-shadow:var(--shadow-sm);cursor:pointer;
+  transition:box-shadow .12s;
+  border-left:4px solid var(--gray-200);
+}
+.nc-card:hover { box-shadow:var(--shadow); }
+.nc-card.nc-open     { border-left-color:var(--sw-blue); }
+.nc-card.nc-critical { border-left-color:var(--sw-red); }
+.nc-card.nc-overdue  { border-left-color:var(--sw-red); background:#FFF8F8; animation:pulse-row 2.5s ease-in-out infinite; }
+.nc-card.nc-closed   { border-left-color:var(--green); }
+.nc-card-top {
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;gap:8px;flex-wrap:wrap;
+}
+.nc-card-id   { font-family:var(--mono);font-size:13px;font-weight:700;color:var(--sw-navy); }
+.nc-card-meta { display:flex;gap:6px;align-items:center;flex-wrap:wrap; }
+.nc-card-row  { font-size:12px;color:var(--gray-600);margin-bottom:4px;display:flex;gap:6px; }
+.nc-card-row .nc-label { color:var(--gray-400);font-weight:600;width:70px;flex-shrink:0; }
+.nc-card-row .nc-val   { color:var(--gray-800);font-weight:500; }
+.nc-card-bottom {
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:10px;padding-top:10px;border-top:1px solid var(--gray-100);
+}
+
+/* KPI cards smaller on mobile */
+@media(max-width:440px){
+  .kpi-val { font-size:22px; }
+  .kpi { padding:14px; }
+  .cta-txt h2 { font-size:17px; }
+  .cta-action { font-size:16px; padding:13px 20px; }
+}
+
+/* Team KPI cards stack on mobile */
+@media(max-width:500px){
+  .kpi-row-2 { grid-template-columns:1fr !important; }
+  .kpi-team-stats { gap:14px; }
+}
 </style>
 </head>
 <body>
@@ -359,7 +428,7 @@ tbody tr.row-critical:hover, tbody tr.row-open:hover, tbody tr.row-overdue:hover
   <div class="nav-brand">
     <svg width="34" height="34" viewBox="0 0 34 34"><rect width="34" height="34" rx="7" fill="#0066A1"/><text x="17" y="23" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="800" fill="white">SW</text></svg>
     <div class="nav-vdiv"></div>
-    <div class="nav-app-name">QNS <span>Quality Notification System · Smurfit Westrock</span></div>
+    <div class="nav-app-name">QNS <span class="nav-subtitle">Quality Notification System · Smurfit Westrock</span></div>
   </div>
   <button class="nav-btn nb-ghost" onclick="showView('dashboard')">⊟ Dashboard</button>
   <button class="nav-btn nb-red" onclick="startWizard()">⚠ Report a Problem</button>
@@ -427,10 +496,14 @@ tbody tr.row-critical:hover, tbody tr.row-open:hover, tbody tr.row-overdue:hover
       <div class="tbl-count" id="tbl-cnt"><strong>—</strong> records</div>
     </div>
     <div style="overflow-x:auto;">
-      <table>
-        <thead><tr><th>QNS ID</th><th>Date</th><th>Reported By</th><th>Dept</th><th>Part</th><th>Machine</th><th>Issue</th><th>Criticality</th><th>Status</th><th>Days Open</th><th></th></tr></thead>
-        <tbody id="tbl-body"><tr><td colspan="10"><div class="empty-st"><div class="e-icon">⏳</div><div class="e-txt">Loading…</div></div></td></tr></tbody>
-      </table>
+      <div class="tbl-desktop">
+        <table>
+          <thead><tr><th>QNS ID</th><th>Date</th><th>Reported By</th><th>Dept</th><th>Part</th><th>Machine</th><th>Issue</th><th>Criticality</th><th>Status</th><th>Days Open</th><th></th></tr></thead>
+          <tbody id="tbl-body"><tr><td colspan="10"><div class="empty-st"><div class="e-icon">⏳</div><div class="e-txt">Loading…</div></div></td></tr></tbody>
+        </table>
+      </div>
+      <!-- Mobile card list -->
+      <div class="tbl-mobile" id="tbl-mobile-list"></div>
     </div>
   </div>
 
@@ -957,33 +1030,70 @@ function applyFilters(){
 function clearFilters(){['fs','ff-st','ff-cr','ff-ma'].forEach(id=>document.getElementById(id).value='');applyFilters();}
 
 function renderTable(data){
-  const tb=document.getElementById('tbl-body');
-  if(!data.length){tb.innerHTML=`<tr><td colspan="10"><div class="empty-st"><div class="e-icon">🔍</div><div class="e-txt">No records match.</div></div></td></tr>`;return;}
-  tb.innerHTML=data.map(nc=>{
-    const d=daysOpen(nc);
-    const isOpen = nc.Status !== 'Closed';
-    const isCrit = nc.Criticality === 'Critical Issue';
-    const isOverdue = isOpen && d >= 30;
-    const rowCls = isOverdue ? 'row-overdue' : isCrit && isOpen ? 'row-critical' : isOpen ? 'row-open' : '';
-    const chip = nc.Status==='Closed' ? `<span class="dchip d-ok">${d}d</span>`
-      : isOverdue ? `<span class="overdue-badge">🔥 ${d}d OVERDUE</span>`
-      : d>7 ? `<span class="dchip d-late">${d}d ⚠</span>`
-      : d>2 ? `<span class="dchip d-warn">${d}d</span>`
-      : `<span class="dchip d-ok">${d}d</span>`;
-    return `<tr class="${rowCls}" onclick="openDetail(${nc.id})">
+  const tb  = document.getElementById('tbl-body');
+  const mob = document.getElementById('tbl-mobile-list');
+
+  if(!data.length){
+    if(tb)  tb.innerHTML=`<tr><td colspan="10"><div class="empty-st"><div class="e-icon">🔍</div><div class="e-txt">No records match.</div></div></td></tr>`;
+    if(mob) mob.innerHTML=`<div style="text-align:center;padding:40px;color:var(--gray-400);">🔍 No records match.</div>`;
+    return;
+  }
+
+  function deptInfo(nc){
+    const lbl = nc.Assigned_Team==='Injection Process'?'Process':
+      nc.Assigned_Team==='Injection Moulding'?'Moulding':
+      nc.NC_Dept==='Assembly'||nc.Assigned_Team==='Assembly Team'?'Assembly':
+      nc.NC_Dept||'—';
+    const clr = nc.Assigned_Team==='Injection Moulding'?'var(--amber-dark)':
+      nc.NC_Dept==='Assembly'||nc.Assigned_Team==='Assembly Team'?'var(--amber)':'var(--sw-blue)';
+    return {lbl,clr};
+  }
+
+  const rows = data.map(nc=>{
+    const d = daysOpen(nc);
+    const isOpen    = nc.Status!=='Closed';
+    const isOverdue = isOpen && d>=30;
+    const rowCls    = isOverdue?'row-overdue':nc.Criticality==='Critical Issue'&&isOpen?'row-critical':isOpen?'row-open':'';
+    const cardCls   = nc.Status==='Closed'?'nc-closed':isOverdue?'nc-overdue':nc.Criticality==='Critical Issue'?'nc-critical':'nc-open';
+    const chip      = nc.Status==='Closed'?`<span class="dchip d-ok">${d}d</span>`:
+      isOverdue?`<span class="overdue-badge">🔥 ${d}d OVERDUE</span>`:
+      d>7?`<span class="dchip d-late">${d}d ⚠</span>`:
+      d>2?`<span class="dchip d-warn">${d}d</span>`:`<span class="dchip d-ok">${d}d</span>`;
+    const {lbl,clr}=deptInfo(nc);
+    return {nc,d,rowCls,cardCls,chip,lbl,clr};
+  });
+
+  // Desktop rows
+  if(tb) tb.innerHTML=rows.map(({nc,rowCls,chip,lbl,clr})=>`<tr class="${rowCls}" onclick="openDetail(${nc.id})">
       <td class="mono">${nc.Title||'—'}</td>
       <td>${fmtDate(nc.Created)}</td>
       <td>${nc.Created_By||'—'}</td>
+      <td><span style="font-size:11px;font-weight:700;color:${clr}">${lbl}</span></td>
       <td>${nc.Part_Name||'—'}</td>
       <td class="mono">${nc.Machine_Number||'—'}</td>
-      <td><span style="font-size:11px;font-weight:700;color:${nc.NC_Dept==='Assembly'?'var(--amber)':'var(--sw-blue)'}">${nc.NC_Dept||MACHINE_DEPT[nc.Machine_Number]||'—'}</span></td>
       <td>${nc.Issue_Reason||'—'}</td>
       <td>${critBadge(nc.Criticality)}</td>
       <td>${statusBadge(nc.Status)}</td>
       <td>${chip}</td>
       <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openDetail(${nc.id})">View →</button></td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('');
+
+  // Mobile cards
+  if(mob) mob.innerHTML=rows.map(({nc,cardCls,chip,lbl,clr})=>`
+    <div class="nc-card ${cardCls}" onclick="openDetail(${nc.id})">
+      <div class="nc-card-top">
+        <span class="nc-card-id">${nc.Title||'—'}</span>
+        <div class="nc-card-meta">${critBadge(nc.Criticality)}&nbsp;${statusBadge(nc.Status)}</div>
+      </div>
+      <div class="nc-card-row"><span class="nc-label">Part</span><span class="nc-val">${nc.Part_Name||'—'}</span></div>
+      <div class="nc-card-row"><span class="nc-label">Machine</span><span class="nc-val">${nc.Machine_Number||'—'} · <strong style="color:${clr}">${lbl}</strong></span></div>
+      <div class="nc-card-row"><span class="nc-label">Issue</span><span class="nc-val">${nc.Issue_Reason||'—'}</span></div>
+      <div class="nc-card-row"><span class="nc-label">By</span><span class="nc-val">${nc.Created_By||'—'} · ${fmtDate(nc.Created)}</span></div>
+      <div class="nc-card-bottom">
+        <div>${chip}</div>
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openDetail(${nc.id})">View →</button>
+      </div>
+    </div>`).join('');
 }
 
 /* ── WIZARD ──────────────────────────────────── */
@@ -1349,7 +1459,11 @@ async function saveUpdate(patch,title,msg){
       if(!r.ok)throw new Error(`Flow error: ${r.status}`);
       Object.assign(currentNC,patch);
     }
-    renderDetail(currentNC);toast('ok',title,msg);
+    renderDetail(currentNC);
+    // Refresh dashboard table and KPIs so status/days update immediately
+    applyFilters();
+    renderKPIs();
+    toast('ok',title,msg);
   }catch(e){toast('err','Save Failed',e.message);}
   load(false);
 }
@@ -1455,15 +1569,7 @@ function selRouteTeam(val, btn) {
   document.getElementById('r-team').value = val;
 }
 
-function selRouteDept(val, btn) {
-  // Show auto-detected dept in routing info
-  const deptLabel = document.getElementById('r-dept-label');
-  if(deptLabel){
-    const ncDeptVal = nc.NC_Dept || (nc.Machine_Number && MACHINE_DEPT[nc.Machine_Number]) || '—';
-    deptLabel.textContent = ncDeptVal === 'Assembly' ? '🔩 Assembly' : ncDeptVal === 'Injection' ? '⚙ Injection' : '—';
-  }
-  btn.classList.add('sel');
-}
+
 
 /* ── TEAM STATS KPIs ────────────────────────── */
 function renderTeamKPIs() {
