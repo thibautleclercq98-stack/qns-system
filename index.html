@@ -20,6 +20,8 @@
 
 
 
+<!-- ★ OneSignal — declare deferred array BEFORE the SDK loads -->
+<script>window.OneSignalDeferred = window.OneSignalDeferred || [];</script>
 <!-- ★ OneSignal Push Notifications -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
@@ -950,7 +952,7 @@ const CONFIG = {
 };
 
 /* ── CONSTANTS ───────────────────────────────── */
-const STAFF = ['Juan Martinez','Susie Quintana','Maria Garza','Sharri Smith','Richard Anaya','Jose Ramos','Kevin Marroquin','Fabian Mata','Gabriel Hernandez','Roberto Hernandez','Salvador Prieto','Roger Rodriguez','Luis Rodriguez','Cristobal Anaya','Not Listed'];
+const STAFF = ['Ruby Cedillo','Juan Martinez','Susie Quintana','Maria Garza','Sharri Smith','Luis Salgado','Richard Anaya','Jose Ramos','Kevin Marroquin','Fabian Mata','Tonya Tilicke','Gabriel Hernandez','Dan Hotchkiss','Gian Luca Cavriani','Roberto Hernandez','Rickey Manaway','Salvador Prieto','Roger Rodriguez','Luis Rodriguez','Cristobal Anaya','Not Listed'];
 // ★ MOLD OPTIONS PER MACHINE — update this list whenever a mold moves
 const MOLD_OPTIONS = {
   IM00: ['1-32A','1-32B'],
@@ -1771,24 +1773,35 @@ async function initOneSignal() {
   try {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async (os) => {
+      toast('info', 'OneSignal', 'SDK loaded, initializing…');
       await os.init({
         appId: CONFIG.oneSignalAppId,
         notifyButton: { enable: false },
-        autoResubscribe: true,
-        serviceWorkerPath: '/qns-system/OneSignalSDKWorker.js',
-        serviceWorkerParam: { scope: '/qns-system/' }
+        autoResubscribe: true
+        // No serviceWorkerPath here — OneSignal uses its dashboard config
       });
-      const granted = os.Notifications.permission;
-      if (granted) {
+      toast('info', 'OneSignal', 'Init complete, checking permission…');
+      // v16: isPushSupported + permission check
+      const supported = os.Notifications.isPushSupported();
+      if (!supported) { toast('err','Push not supported','This browser/device does not support web push.'); return; }
+      const permission = await os.Notifications.permission;
+      toast('info', 'Permission state', String(permission));
+      if (permission) {
         _notifEnabled = true;
         localStorage.setItem('qns_notif', 'true');
-        if (_notifDept) await os.User.addTag('department', _notifDept);
+        if (_notifDept) {
+          await os.User.addTag('department', _notifDept);
+          toast('ok','Tag set','department = ' + _notifDept);
+        }
         updateNotifNavBtn();
       } else if (!localStorage.getItem('qns_banner_dismissed')) {
-        setTimeout(showNotifBanner, 2500);
+        setTimeout(showNotifBanner, 1500);
       }
     });
-  } catch(e) { console.warn('OneSignal init:', e); }
+  } catch(e) {
+    toast('err', 'OneSignal error', e.message);
+    console.warn('OneSignal init:', e);
+  }
 }
 
 function showNotifBanner() {
@@ -1808,14 +1821,30 @@ async function requestNotifPermission() {
     toast('info','OneSignal not configured','Add App ID to CONFIG'); return;
   }
   window.OneSignalDeferred.push(async (os) => {
-    await os.Notifications.requestPermission();
-    const granted = os.Notifications.permission;
+    toast('info','Requesting permission…','Please tap Allow when prompted');
+    try {
+      // Try slidedown prompt first (more reliable on iOS)
+      if (os.Slidedown) {
+        await os.Slidedown.promptPush();
+      } else {
+        await os.Notifications.requestPermission();
+      }
+    } catch(e) {
+      // Fallback
+      await os.Notifications.requestPermission();
+    }
+    const granted = await os.Notifications.permission;
+    toast('info','Permission result', String(granted));
     if (granted) {
       _notifEnabled = true;
       localStorage.setItem('qns_notif', 'true');
-      if (_notifDept) await os.User.addTag('department', _notifDept);
+      if (_notifDept) {
+        await os.User.addTag('department', _notifDept);
+        toast('ok','🔔 Subscribed!','department = ' + _notifDept);
+      }
       updateNotifNavBtn();
-      toast('ok','🔔 Notifications enabled!',`Alerts for ${deptLabel(_notifDept)}`);
+    } else {
+      toast('err','Permission denied','Check iPhone Settings → Notifications → allow QNS');
     }
   });
 }
