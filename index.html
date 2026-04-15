@@ -20,7 +20,7 @@
 
 
 
-<!-- ★ OneSignal Push Notifications SDK -->
+<!-- ★ OneSignal Push Notifications -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
 <!-- Web app manifest (inline) -->
@@ -459,6 +459,27 @@ html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
 <div id="loader"><div class="lspin"></div></div>
 <div id="toast-area"></div>
 
+<!-- SPLASH -->
+<div class="view active" id="view-splash">
+  <div class="sp-logo">SW</div>
+  <div class="sp-title">Quality Notification System</div>
+  <div class="sp-sub">Smurfit Westrock · VITOP San Antonio</div>
+  <div class="sp-spin"></div>
+  <div style="color:rgba(255,255,255,.3);font-size:12px;font-family:var(--mono);" id="sp-status">Initializing…</div>
+</div>
+
+<!-- NAV -->
+<nav id="nav" class="hidden">
+  <div class="nav-brand">
+    <svg width="34" height="34" viewBox="0 0 34 34"><rect width="34" height="34" rx="7" fill="#0066A1"/><text x="17" y="23" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="800" fill="white">SW</text></svg>
+    <div class="nav-vdiv"></div>
+    <div class="nav-app-name">QNS <span class="nav-subtitle">Quality Notification System · Smurfit Westrock</span></div>
+  </div>
+  <button class="nav-btn nb-ghost" onclick="showView('dashboard')">⊟ Dashboard</button>
+  <button class="nav-btn nb-ghost" id="notif-nav-btn" onclick="openDeptModal(false)" title="Notification settings" style="font-size:12px;">🔔 Notifications</button>
+  <button class="nav-btn nb-red" onclick="startWizard()">⚠ Report a Problem</button>
+</nav>
+
 <!-- ★ PUSH NOTIFICATION BANNER -->
 <div id="notif-banner" style="position:fixed;top:0;left:0;right:0;z-index:9998;background:linear-gradient(135deg,#1A3D6B 0%,#00305E 100%);border-bottom:2px solid #0066A1;padding:12px 18px;display:flex;align-items:center;gap:12px;transform:translateY(-100%);transition:transform .35s ease;">
   <span style="font-size:22px;flex-shrink:0;">🔔</span>
@@ -484,26 +505,6 @@ html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
     <button onclick="closeDeptModal()" style="width:100%;margin-top:8px;height:36px;background:none;border:none;font-size:13px;color:#7A90A4;cursor:pointer;">Cancel</button>
   </div>
 </div>
-
-<!-- SPLASH -->
-<div class="view active" id="view-splash">
-  <div class="sp-logo">SW</div>
-  <div class="sp-title">Quality Notification System</div>
-  <div class="sp-sub">Smurfit Westrock · VITOP San Antonio</div>
-  <div class="sp-spin"></div>
-  <div style="color:rgba(255,255,255,.3);font-size:12px;font-family:var(--mono);" id="sp-status">Initializing…</div>
-</div>
-
-<!-- NAV -->
-<nav id="nav" class="hidden">
-  <div class="nav-brand">
-    <svg width="34" height="34" viewBox="0 0 34 34"><rect width="34" height="34" rx="7" fill="#0066A1"/><text x="17" y="23" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="800" fill="white">SW</text></svg>
-    <div class="nav-vdiv"></div>
-    <div class="nav-app-name">QNS <span class="nav-subtitle">Quality Notification System · Smurfit Westrock</span></div>
-  </div>
-  <button class="nav-btn nb-ghost" onclick="showView('dashboard')">⊟ Dashboard</button>
-  <button class="nav-btn nb-red" onclick="startWizard()">⚠ Report a Problem</button>
-</nav>
 
 <!-- ══════════ DASHBOARD ══════════ -->
 <div class="view" id="view-dashboard">
@@ -943,11 +944,9 @@ const CONFIG = {
   flowGet:    'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ac02c34e5f0748d8af5fbf28d29abf58/triggers/manual/paths/invoke?api-version=1',
   flowCreate: 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/2fd482e902c147fb84645e950a8003d7/triggers/manual/paths/invoke?api-version=1',
   flowUpdate: 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d209eec985604daa85111314b2a9a7a5/triggers/manual/paths/invoke?api-version=1',
-  demoMode: true,
-  // ★ OneSignal — add your App ID from onesignal.com
+  flowNotify: 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0a951806d7da462fb0d55484fc2d1544/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Hh9bMGt-7AyXlxE201FImeJvtCv1fUj0uHhVRRsIQQQ',
   oneSignalAppId: '1e0fabbb-6595-4247-894c-1eab1e9019a5',
-  // ★ Power Automate flow that sends OneSignal push (keeps REST key private)
-  flowNotify: 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0a951806d7da462fb0d55484fc2d1544/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Hh9bMGt-7AyXlxE201FImeJvtCv1fUj0uHhVRRsIQQQ'
+  demoMode: true
 };
 
 /* ── CONSTANTS ───────────────────────────────── */
@@ -1056,7 +1055,7 @@ async function loadAndShow(){
     renderKPIs(); populateMachineFilter(); applyFilters();
     document.getElementById('refresh-ts').textContent=`— updated ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
     showView('dashboard');
-    initOneSignal(); // ★ start push notifications after dashboard loads
+    initOneSignal();
   }catch(e){
     toast('err','Load Error',e.message);
     allNCs=DEMO; renderKPIs(); populateMachineFilter(); applyFilters();
@@ -1364,12 +1363,8 @@ async function submitNC(){
       if(!r.ok)throw new Error(`Flow error: ${r.status}`);
       toast('ok','NC Submitted',`${qnsId} logged — Team Lead notified via Teams.`);
     }
-    // ★ Push notification → Team Lead must route this NC
-    pushNotify('team_lead', `New NC: ${qnsId}`, `${payload.Criticality} · ${payload.Part_Name} on ${payload.Machine_Number} — needs routing`, qnsId);
-    // ★ If critical, also ping management
-    if(payload.Criticality === 'Critical Issue'){
-      pushNotify('management', `🚨 Critical NC: ${qnsId}`, `${payload.Part_Name} on ${payload.Machine_Number} — immediate attention required`, qnsId);
-    }
+    pushNotify('team_lead',`New NC: ${qnsId}`,`${payload.Criticality} · ${payload.Part_Name} on ${payload.Machine_Number} — needs routing`,qnsId);
+    if(payload.Criticality==='Critical Issue') pushNotify('management',`🚨 Critical NC: ${qnsId}`,`${payload.Part_Name} on ${payload.Machine_Number} — immediate attention required`,qnsId);
     await loadAndShow();
   }catch(e){toast('err','Submit Failed',e.message);load(false);}
 }
@@ -1479,9 +1474,8 @@ async function routeNC(){
     Assigned_Person:document.getElementById('r-person').value,
     Routing_Date:new Date().toISOString()
   },'NC Routed',`Assigned to ${team} — ${dept} dept Teams notified.`);
-  // ★ Push notification → assigned team must correct the NC
-  const routeDept = team.toLowerCase().replace('injection moulding','injection_molding').replace('injection process','injection_process').replace(' ','_');
-  pushNotify(routeDept, `NC Assigned to You: ${currentNC.Title}`, `${currentNC.Criticality} · ${currentNC.Part_Name} on ${currentNC.Machine_Number} — please correct`, currentNC.Title);
+  const routeDept = team==='Injection Moulding'?'injection_molding':team==='Injection Process'?'injection_process':'assembly';
+  pushNotify(routeDept,`NC Assigned: ${currentNC.Title}`,`${currentNC.Criticality} · ${currentNC.Part_Name} on ${currentNC.Machine_Number} — please correct`,currentNC.Title);
 }
 async function submitCorrection(){
   const actions=document.getElementById('c-act').value.trim();
@@ -1508,10 +1502,7 @@ async function submitCorrection(){
     Correction_Log: JSON.stringify(existing)
   }, corr==='Yes'?'Correction Submitted':'Progress Logged',
      corr==='Yes'?'Sent to Quality for review.':'Entry saved — log another correction when ready.');
-  // ★ Push notification → Quality must verify when correction is done
-  if(corr==='Yes'){
-    pushNotify('quality', `NC Ready for Verification: ${currentNC.Title}`, `${currentNC.Assigned_Team} completed correction on ${currentNC.Part_Name} — please verify & close`, currentNC.Title);
-  }
+  if(corr==='Yes') pushNotify('quality',`NC Ready for Verification: ${currentNC.Title}`,`${currentNC.Assigned_Team} completed correction on ${currentNC.Part_Name} — please verify`,currentNC.Title);
   document.getElementById('c-act').value='';
   document.getElementById('c-shots').value='';
 }
@@ -1536,11 +1527,6 @@ async function submitVerification(){
     QC_Review_Log: JSON.stringify(qcLog),
     Date_Closed: close==='Yes'?now.toISOString():''
   },'QC Sign-Off Complete', msg);
-  // ★ Push notification → if reopened, notify the assigned team
-  if(close !== 'Yes'){
-    const reopenDept = (currentNC.Assigned_Team||'').toLowerCase().replace('injection moulding','injection_molding').replace('injection process','injection_process').replace(' ','_') || 'injection_molding';
-    pushNotify(reopenDept, `NC Returned for Re-Work: ${currentNC.Title}`, `Quality sent back ${currentNC.Part_Name} — additional correction needed`, currentNC.Title);
-  }
   // Reset form
   document.getElementById('v-notes').value='';
   document.getElementById('v-appr').value='';
@@ -1775,22 +1761,11 @@ function renderQCHistory(nc) {
 
 /* ═══════════════════════════════════════════════════════
    ★ ONESIGNAL PUSH NOTIFICATIONS
-   ─────────────────────────────────────────────────────
-   How it works:
-   1. OneSignal SDK loads (see <head> script tag)
-   2. After dashboard loads, we check if notifications
-      are already enabled or show the banner
-   3. User picks their department → tagged in OneSignal
-   4. When a NC is submitted/routed, the app calls
-      CONFIG.flowNotify (Power Automate) which then
-      calls OneSignal REST API with the department tag
-      → only the right phones get the notification
 ═══════════════════════════════════════════════════════ */
 let _notifDept = localStorage.getItem('qns_dept') || null;
 let _notifEnabled = localStorage.getItem('qns_notif') === 'true';
 let _pendingNotifRequest = false;
 
-/* Called once after dashboard loads */
 async function initOneSignal() {
   if (!CONFIG.oneSignalAppId || CONFIG.oneSignalAppId === 'YOUR_ONESIGNAL_APP_ID') return;
   try {
@@ -1799,14 +1774,16 @@ async function initOneSignal() {
       await os.init({
         appId: CONFIG.oneSignalAppId,
         notifyButton: { enable: false },
-        autoResubscribe: true
+        autoResubscribe: true,
+        serviceWorkerPath: '/qns-system/OneSignalSDKWorker.js',
+        serviceWorkerParam: { scope: '/qns-system/' }
       });
       const granted = os.Notifications.permission;
       if (granted) {
         _notifEnabled = true;
         localStorage.setItem('qns_notif', 'true');
         if (_notifDept) await os.User.addTag('department', _notifDept);
-        updateNotifUI();
+        updateNotifNavBtn();
       } else if (!localStorage.getItem('qns_banner_dismissed')) {
         setTimeout(showNotifBanner, 2500);
       }
@@ -1815,24 +1792,20 @@ async function initOneSignal() {
 }
 
 function showNotifBanner() {
-  const b = document.getElementById('notif-banner');
-  b.style.transform = 'translateY(0)';
+  document.getElementById('notif-banner').style.transform = 'translateY(0)';
 }
-
 function dismissNotifBanner() {
   document.getElementById('notif-banner').style.transform = 'translateY(-100%)';
   localStorage.setItem('qns_banner_dismissed', 'true');
 }
-
 function enableNotifications() {
   dismissNotifBanner();
   if (!_notifDept) { openDeptModal(true); return; }
   requestNotifPermission();
 }
-
 async function requestNotifPermission() {
   if (!CONFIG.oneSignalAppId || CONFIG.oneSignalAppId === 'YOUR_ONESIGNAL_APP_ID') {
-    toast('info', 'OneSignal not set up', 'Add your App ID to CONFIG.oneSignalAppId'); return;
+    toast('info','OneSignal not configured','Add App ID to CONFIG'); return;
   }
   window.OneSignalDeferred.push(async (os) => {
     await os.Notifications.requestPermission();
@@ -1841,72 +1814,56 @@ async function requestNotifPermission() {
       _notifEnabled = true;
       localStorage.setItem('qns_notif', 'true');
       if (_notifDept) await os.User.addTag('department', _notifDept);
-      updateNotifUI();
-      toast('ok', '🔔 Notifications enabled!', `You'll receive alerts for ${deptLabel(_notifDept)} NCs`);
+      updateNotifNavBtn();
+      toast('ok','🔔 Notifications enabled!',`Alerts for ${deptLabel(_notifDept)}`);
     }
   });
 }
-
 function openDeptModal(pendingRequest = false) {
   _pendingNotifRequest = pendingRequest;
-  const modal = document.getElementById('dept-modal');
-  modal.style.display = 'flex';
+  document.getElementById('dept-modal').style.display = 'flex';
   document.querySelectorAll('.dept-opt').forEach(b => {
     const sel = b.dataset.dept === _notifDept;
     b.style.borderColor = sel ? '#0066A1' : '#D1DAE5';
     b.style.background  = sel ? '#D6E8F5' : '#fff';
   });
-  document.getElementById('dept-save-btn').style.opacity = _notifDept ? '1' : '.5';
-  document.getElementById('dept-save-btn').disabled = !_notifDept;
+  const saveBtn = document.getElementById('dept-save-btn');
+  saveBtn.disabled = !_notifDept;
+  saveBtn.style.opacity = _notifDept ? '1' : '.5';
 }
-
 function closeDeptModal() {
   document.getElementById('dept-modal').style.display = 'none';
 }
-
 function selectDept(btn) {
-  document.querySelectorAll('.dept-opt').forEach(b => {
-    b.style.borderColor = '#D1DAE5'; b.style.background = '#fff';
-  });
-  btn.style.borderColor = '#0066A1';
-  btn.style.background  = '#D6E8F5';
+  document.querySelectorAll('.dept-opt').forEach(b => { b.style.borderColor='#D1DAE5'; b.style.background='#fff'; });
+  btn.style.borderColor = '#0066A1'; btn.style.background = '#D6E8F5';
+  _notifDept = btn.dataset.dept;
   const saveBtn = document.getElementById('dept-save-btn');
   saveBtn.disabled = false; saveBtn.style.opacity = '1';
-  _notifDept = btn.dataset.dept;
 }
-
 async function saveDept() {
   localStorage.setItem('qns_dept', _notifDept);
   closeDeptModal();
-  updateNotifUI();
-  try {
-    window.OneSignalDeferred.push(async (os) => {
-      await os.User.addTag('department', _notifDept);
-    });
-  } catch(e) {}
-  toast('ok', 'Department saved', deptLabel(_notifDept));
+  updateNotifNavBtn();
+  try { window.OneSignalDeferred.push(async (os) => { await os.User.addTag('department', _notifDept); }); } catch(e) {}
+  toast('ok','Department saved', deptLabel(_notifDept));
   if (_pendingNotifRequest) { _pendingNotifRequest = false; requestNotifPermission(); }
 }
-
-function updateNotifUI() {
-  /* Update the nav notification button if it exists */
+function updateNotifNavBtn() {
   const el = document.getElementById('notif-nav-btn');
   if (!el) return;
   if (_notifEnabled && _notifDept) {
     el.textContent = `🔔 ${deptLabel(_notifDept)}`;
     el.style.color = '#4CAF50';
   } else {
-    el.textContent = '🔕 Notifications';
-    el.style.color = 'rgba(255,255,255,.5)';
+    el.textContent = '🔔 Notifications';
+    el.style.color = '';
   }
 }
-
 function deptLabel(d) {
-  return { quality:'Quality', team_lead:'Team Lead', injection_molding:'Injection Moulding',
-           injection_process:'Injection Process', management:'Management', all:'All Departments' }[d] || d;
+  return {quality:'Quality',team_lead:'Team Lead',injection_molding:'Injection Moulding',
+          injection_process:'Injection Process',management:'Management',all:'All Depts'}[d]||d;
 }
-
-/* Called whenever a NC action should notify a department */
 async function pushNotify(targetDept, title, message, ncId) {
   if (!CONFIG.flowNotify || CONFIG.flowNotify === 'YOUR_POWER_AUTOMATE_NOTIFY_FLOW_URL') return;
   try {
@@ -1915,11 +1872,9 @@ async function pushNotify(targetDept, title, message, ncId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetDept, title, message, ncId })
     });
-  } catch(e) { console.warn('pushNotify error:', e); }
+  } catch(e) { console.warn('pushNotify:', e); }
 }
 
-/* Hook into loadAndShow to initialize OneSignal after load */
-const _origLoadAndShow = typeof loadAndShow === 'function' ? loadAndShow : null;
 </script>
 
 <!-- iOS Add to Home Screen hint banner -->
