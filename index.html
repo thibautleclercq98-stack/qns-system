@@ -1529,6 +1529,18 @@ async function submitVerification(){
     QC_Review_Log: JSON.stringify(qcLog),
     Date_Closed: close==='Yes'?now.toISOString():''
   },'QC Sign-Off Complete', msg);
+  // ★ Push notification → if reopened, alert the assigned team to fix it again
+if(close === 'No'){
+  const assignedTeam = currentNC.Assigned_Team || '';
+  const reopenDept = assignedTeam === 'Injection Moulding' ? 'injection_molding'
+                   : assignedTeam === 'Injection Process'  ? 'injection_process'
+                   : assignedTeam === 'Assembly Team'      ? 'assembly'
+                   : 'injection_molding';
+  pushNotify(reopenDept,
+    `⚠️ NC Returned: ${currentNC.Title}`,
+    `Quality rejected — ${currentNC.Part_Name} on ${currentNC.Machine_Number} needs more work`,
+    currentNC.Title);
+}
   // Reset form
   document.getElementById('v-notes').value='';
   document.getElementById('v-appr').value='';
