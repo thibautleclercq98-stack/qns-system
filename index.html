@@ -1216,6 +1216,19 @@ function renderTable(data){
     </div>`).join('');
 }
 
+/* ── QNS ID GENERATOR ────────────────────────── */
+function generateQnsId(base) {
+  // Check if base ID already exists, if so add A, B, C suffix
+  const existing = allNCs.map(n => n.Title).filter(t => t && t.startsWith(base));
+  if (!existing.length) return base;
+  // Find next available suffix
+  const suffixes = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  for (const s of suffixes) {
+    if (!existing.includes(base + s)) return base + s;
+  }
+  return base; // fallback
+}
+
 /* ── WIZARD ──────────────────────────────────── */
 function startWizard(){wizardReset();showView('new-nc');}
 function wizardReset(){
@@ -1352,7 +1365,7 @@ function buildReview(){
   const dd=String(now.getDate()).padStart(2,'0');
   const mach=document.getElementById('w-mach').value||'IMXX';
   const isAsm = ASSEMBLY_MACHINES.has(mach);
-  document.getElementById('rv-id').textContent=`${yy}${mm}${dd}${mach}`;
+  document.getElementById('rv-id').textContent=generateQnsId(`${yy}${mm}${dd}${mach}`);
   set('rv-rep',document.getElementById('w-rep').value);
   set('rv-mach',document.getElementById('w-mach').value + ' — ' + (isAsm?'🔩 Assembly':'⚙ Injection'));
   set('rv-mold',isAsm ? 'N/A (Assembly)' : (document.getElementById('w-mold').value||'—'));
@@ -1378,7 +1391,7 @@ async function submitNC(){
   const mm=String(now.getMonth()+1).padStart(2,'0');
   const dd=String(now.getDate()).padStart(2,'0');
   const mach=document.getElementById('w-mach').value;
-  const qnsId=`${yy}${mm}${dd}${mach}`;
+  const qnsId=generateQnsId(`${yy}${mm}${dd}${mach}`);
   const isAssemblyMach = ASSEMBLY_MACHINES.has(mach);
   const payload={
     Title:qnsId, Status: isAssemblyMach ? 'Assigned' : 'Open',
