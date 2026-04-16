@@ -947,7 +947,7 @@ const CONFIG = {
   flowCreate: 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/2fd482e902c147fb84645e950a8003d7/triggers/manual/paths/invoke?api-version=1',
   flowUpdate: 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d209eec985604daa85111314b2a9a7a5/triggers/manual/paths/invoke?api-version=1',
   flowNotify: 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0a951806d7da462fb0d55484fc2d1544/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Hh9bMGt-7AyXlxE201FImeJvtCv1fUj0uHhVRRsIQQQ',
-  oneSignalAppId: '1e0fabbb-6595-4247-894c-1eab1e9019a5',
+  oneSignalAppId: '1e0fabbb-6595-4247-894c-1eab1e9019a5', // Provided OneSignal App ID
   demoMode: true
 };
 
@@ -1767,15 +1767,31 @@ function renderQCHistory(nc) {
 let _notifDept = localStorage.getItem('qns_dept') || null;
 let _notifEnabled = localStorage.getItem('qns_notif') === 'true';
 let _pendingNotifRequest = false;
+const DEFAULT_ONESIGNAL_APP_ID = '1e0fabbb-6595-4247-894c-1eab1e9019a5';
+
+function isStandaloneIOSWebApp() {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  return isIOS && window.navigator.standalone === true;
+}
+
+function isOneSignalConfigured() {
+  const appId = getOneSignalAppId();
+  if (!appId) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(appId);
+}
+
+function getOneSignalAppId() {
+  return String(CONFIG.oneSignalAppId || DEFAULT_ONESIGNAL_APP_ID).trim();
+}
 
 async function initOneSignal() {
-  if (!CONFIG.oneSignalAppId || CONFIG.oneSignalAppId === '1e0fabbb-6595-4247-894c-1eab1e9019a5') return;
+  if (!isOneSignalConfigured()) return;
   try {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async (os) => {
       toast('info', 'OneSignal', 'SDK loaded, initializing…');
       await os.init({
-        appId: CONFIG.oneSignalAppId,
+        appId: getOneSignalAppId(),
         notifyButton: { enable: false },
         autoResubscribe: true
         // No serviceWorkerPath here — OneSignal uses its dashboard config
@@ -1785,8 +1801,9 @@ async function initOneSignal() {
       const supported = os.Notifications.isPushSupported();
       if (!supported) { toast('err','Push not supported','This browser/device does not support web push.'); return; }
       const permission = await os.Notifications.permission;
+      const granted = permission === true || permission === 'granted';
       toast('info', 'Permission state', String(permission));
-      if (permission) {
+      if (granted) {
         _notifEnabled = true;
         localStorage.setItem('qns_notif', 'true');
         if (_notifDept) {
@@ -1817,8 +1834,12 @@ function enableNotifications() {
   requestNotifPermission();
 }
 async function requestNotifPermission() {
-  if (!CONFIG.oneSignalAppId || CONFIG.oneSignalAppId === '1e0fabbb-6595-4247-894c-1eab1e9019a5') {
-    toast('info','OneSignal not configured','Add App ID to CONFIG'); return;
+  if (!isOneSignalConfigured()) {
+    toast('err','OneSignal App ID invalid','Please verify CONFIG.oneSignalAppId'); return;
+  }
+  if (isStandaloneIOSWebApp() === false && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
+    toast('err','Open from Home Screen','On iPhone, install QNS to Home Screen first, then open it there to enable push.');
+    return;
   }
   window.OneSignalDeferred.push(async (os) => {
     toast('info','Requesting permission…','Please tap Allow when prompted');
@@ -1833,8 +1854,9 @@ async function requestNotifPermission() {
       // Fallback
       await os.Notifications.requestPermission();
     }
-    const granted = await os.Notifications.permission;
-    toast('info','Permission result', String(granted));
+    const permission = await os.Notifications.permission;
+    const granted = permission === true || permission === 'granted';
+    toast('info','Permission result', String(permission));
     if (granted) {
       _notifEnabled = true;
       localStorage.setItem('qns_notif', 'true');
