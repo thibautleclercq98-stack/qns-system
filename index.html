@@ -1769,7 +1769,7 @@ let _notifEnabled = localStorage.getItem('qns_notif') === 'true';
 let _pendingNotifRequest = false;
 
 async function initOneSignal() {
-  if (!CONFIG.oneSignalAppId || CONFIG.oneSignalAppId === 'YOUR_ONESIGNAL_APP_ID') return;
+  if (!CONFIG.oneSignalAppId || CONFIG.oneSignalAppId === '1e0fabbb-6595-4247-894c-1eab1e9019a5') return;
   try {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async (os) => {
@@ -1817,7 +1817,7 @@ function enableNotifications() {
   requestNotifPermission();
 }
 async function requestNotifPermission() {
-  if (!CONFIG.oneSignalAppId || CONFIG.oneSignalAppId === 'YOUR_ONESIGNAL_APP_ID') {
+  if (!CONFIG.oneSignalAppId || CONFIG.oneSignalAppId === '1e0fabbb-6595-4247-894c-1eab1e9019a5') {
     toast('info','OneSignal not configured','Add App ID to CONFIG'); return;
   }
   window.OneSignalDeferred.push(async (os) => {
