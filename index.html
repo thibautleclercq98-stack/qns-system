@@ -1553,7 +1553,7 @@ async function submitCorrection(){
     id:currentNC.Title,
     Status: corr==='Yes'?'Corrected':'In Progress',
     Actions_Taken: actions,
-    Shots_Validated: parseIntSafe(shots, 0),
+    Shots_Validated: String(parseIntSafe(shots, 0)),
     Corrected_By: currentNC.Assigned_Team||'Team',
     Correction_Date: now.toISOString(),
     Correction_Log: JSON.stringify(existing)
