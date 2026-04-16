@@ -1082,7 +1082,9 @@ async function loadAndShow(){
       const r=await fetchWithTimeout(CONFIG.flowGet,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
       if(!r.ok) throw new Error(`Flow error: ${r.status}`);
       const d=await r.json();
-      allNCs=Array.isArray(d)?d:(d.value||[]);
+      const raw=Array.isArray(d)?d:(d.value||[]);
+      // Filter out empty rows (Excel sometimes returns blank rows)
+      allNCs=raw.filter(n=>n.Title && n.Title.trim()!=='');
     }
     renderKPIs(); populateMachineFilter(); applyFilters();
     document.getElementById('refresh-ts').textContent=`— updated ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
