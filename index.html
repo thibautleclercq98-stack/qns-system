@@ -1433,7 +1433,7 @@ function renderDetail(nc){
     renderQCHistory(nc);
   }
   if(s==='Closed'){set('d-sa',nc.Actions_Taken||'—');
-    const corrLog = nc.Correction_Log ? JSON.parse(nc.Correction_Log) : [];
+    const corrLog = nc.Correction_Log ? parseJSONSafe(nc.Correction_Log, []) : [];
     set('d-sa-count', corrLog.length > 0 ? `${corrLog.length} correction ${corrLog.length===1?'entry':'entries'} logged` : '—');setMono('d-ss',nc.Shots_Validated!=null?nc.Shots_Validated:'—');set('d-scb',nc.Corrected_By||'—');setMono('d-scd',fmtDate(nc.Correction_Date));set('d-st',nc.Assigned_Team||'—');set('d-sqn',nc.QC_Notes||'—');set('d-sqa',nc.Quality_Approver||'—');setMono('d-sdc',fmtDate(nc.Date_Closed));}
   buildTimeline(nc);buildSidebarActions(nc);
 }
@@ -1488,17 +1488,17 @@ async function submitCorrection(){
   if(ncDeptCorr !== 'Assembly' && !shots){toast('err','Required','Enter number of shots validated.');return;}
   // Append to history log
   const now = new Date();
-  const existing = currentNC.Correction_Log ? JSON.parse(currentNC.Correction_Log) : [];
+  const existing = currentNC.Correction_Log ? parseJSONSafe(currentNC.Correction_Log, []) : [];
   existing.push({
     date: now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
     by: currentNC.Assigned_Team||'Team',
-    actions, shots: parseInt(shots), resolved: corr
+    actions, shots: parseIntSafe(shots, 0), resolved: corr
   });
   await saveUpdate({
     id:currentNC.id,
     Status: corr==='Yes'?'Corrected':'In Progress',
     Actions_Taken: actions,
-    Shots_Validated: parseInt(shots),
+    Shots_Validated: parseIntSafe(shots, 0),
     Corrected_By: currentNC.Assigned_Team||'Team',
     Correction_Date: now.toISOString(),
     Correction_Log: JSON.stringify(existing)
@@ -1513,7 +1513,7 @@ async function submitVerification(){
   const close = document.getElementById('v-close').value;
   if(!appr){toast('err','Required','Please select a QC approver.');return;}
   const now = new Date();
-  const qcLog = currentNC.QC_Review_Log ? JSON.parse(currentNC.QC_Review_Log) : [];
+  const qcLog = currentNC.QC_Review_Log ? parseJSONSafe(currentNC.QC_Review_Log, []) : [];
   qcLog.push({
     date: now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
     approver: appr, closed: close,
@@ -1568,6 +1568,8 @@ function daysChip(nc){const d=daysOpen(nc);const cls=nc.Status==='Closed'?'d-ok'
 function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v??'—';}
 function setMono(id,v){const e=document.getElementById(id);if(e){e.textContent=v??'—';e.classList.add('mono');}}
 function vis(id,show){const e=document.getElementById(id);if(e)e.style.display=show?'':'none';}
+function parseJSONSafe(raw, fallback){if(!raw)return fallback;try{return JSON.parse(raw);}catch(e){return fallback;}}
+function parseIntSafe(value, fallback=0){const n=parseInt(value,10);return Number.isNaN(n)?fallback:n;}
 function load(on){document.getElementById('loader').classList.toggle('on',on);}
 function fmtDate(d){if(!d)return'—';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch{return'—';}}
 function toast(type,title,msg=''){
@@ -1679,7 +1681,7 @@ function renderTeamKPIs() {
 
 /* ── CORRECTION HISTORY ─────────────────────── */
 function renderCorrectionHistory(nc) {
-  const log = nc.Correction_Log ? JSON.parse(nc.Correction_Log) : [];
+  const log = nc.Correction_Log ? parseJSONSafe(nc.Correction_Log, []) : [];
 
   // Helper to build log HTML
   function buildLogHTML(log, isAsmNC) {
@@ -1728,7 +1730,7 @@ function renderCorrectionHistory(nc) {
 
 /* ── QC HISTORY (reopen log) ────────────────── */
 function renderQCHistory(nc) {
-  const log = nc.QC_Review_Log ? JSON.parse(nc.QC_Review_Log) : [];
+  const log = nc.QC_Review_Log ? parseJSONSafe(nc.QC_Review_Log, []) : [];
   const container = document.getElementById('qc-history');
   const logEl = document.getElementById('qc-history-log');
   if (!container || !logEl) return;
@@ -1770,6 +1772,11 @@ let _pendingNotifRequest = false;
 const DEFAULT_ONESIGNAL_APP_ID = '1e0fabbb-6595-4247-894c-1eab1e9019a5';
 
 function isStandaloneIOSWebApp() {
+  return isIOSDevice() && window.navigator.standalone === true;
+}
+
+function isIOSDevice() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   return isIOS && window.navigator.standalone === true;
 }
@@ -1782,6 +1789,21 @@ function isOneSignalConfigured() {
 
 function getOneSignalAppId() {
   return String(CONFIG.oneSignalAppId || DEFAULT_ONESIGNAL_APP_ID).trim();
+}
+
+async function getPushPermission(os) {
+  try {
+    const val = await os.Notifications.permission;
+    if (typeof val !== 'undefined') return val;
+  } catch(e) {}
+  try {
+    if (typeof Notification !== 'undefined') return Notification.permission;
+  } catch(e) {}
+  return 'default';
+}
+
+function isPermissionGranted(permission) {
+  return permission === true || permission === 'granted';
 }
 
 async function initOneSignal() {
@@ -1800,6 +1822,8 @@ async function initOneSignal() {
       // v16: isPushSupported + permission check
       const supported = os.Notifications.isPushSupported();
       if (!supported) { toast('err','Push not supported','This browser/device does not support web push.'); return; }
+      const permission = await getPushPermission(os);
+      const granted = isPermissionGranted(permission);
       const permission = await os.Notifications.permission;
       const granted = permission === true || permission === 'granted';
       toast('info', 'Permission state', String(permission));
@@ -1822,10 +1846,12 @@ async function initOneSignal() {
 }
 
 function showNotifBanner() {
-  document.getElementById('notif-banner').style.transform = 'translateY(0)';
+  const el = document.getElementById('notif-banner');
+  if (el) el.style.transform = 'translateY(0)';
 }
 function dismissNotifBanner() {
-  document.getElementById('notif-banner').style.transform = 'translateY(-100%)';
+  const el = document.getElementById('notif-banner');
+  if (el) el.style.transform = 'translateY(-100%)';
   localStorage.setItem('qns_banner_dismissed', 'true');
 }
 function enableNotifications() {
@@ -1837,6 +1863,13 @@ async function requestNotifPermission() {
   if (!isOneSignalConfigured()) {
     toast('err','OneSignal App ID invalid','Please verify CONFIG.oneSignalAppId'); return;
   }
+  if (isStandaloneIOSWebApp() === false && isIOSDevice()) {
+    toast('err','Open from Home Screen','On iPhone, install QNS to Home Screen first, then open it there to enable push.');
+    return;
+  }
+  if (!window.OneSignalDeferred) {
+    toast('err','OneSignal not ready','SDK is still loading, please try again.');
+    return;
   if (isStandaloneIOSWebApp() === false && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
     toast('err','Open from Home Screen','On iPhone, install QNS to Home Screen first, then open it there to enable push.');
     return;
@@ -1852,8 +1885,10 @@ async function requestNotifPermission() {
       }
     } catch(e) {
       // Fallback
-      await os.Notifications.requestPermission();
+      try { await os.Notifications.requestPermission(); } catch(innerErr) {}
     }
+    const permission = await getPushPermission(os);
+    const granted = isPermissionGranted(permission);
     const permission = await os.Notifications.permission;
     const granted = permission === true || permission === 'granted';
     toast('info','Permission result', String(permission));
@@ -1893,6 +1928,7 @@ function selectDept(btn) {
   saveBtn.disabled = false; saveBtn.style.opacity = '1';
 }
 async function saveDept() {
+  if (!_notifDept) { toast('err','Select a department','Please select your department first.'); return; }
   localStorage.setItem('qns_dept', _notifDept);
   closeDeptModal();
   updateNotifNavBtn();
@@ -1918,11 +1954,12 @@ function deptLabel(d) {
 async function pushNotify(targetDept, title, message, ncId) {
   if (!CONFIG.flowNotify || CONFIG.flowNotify === 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com/powerautomate/automations/direct/workflows/0a951806d7da462fb0d55484fc2d1544/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Hh9bMGt-7AyXlxE201FImeJvtCv1fUj0uHhVRRsIQQQ') return;
   try {
-    fetch(CONFIG.flowNotify, {
+    const res = await fetch(CONFIG.flowNotify, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetDept, title, message, ncId })
     });
+    if (!res.ok) console.warn('pushNotify non-200:', res.status);
   } catch(e) { console.warn('pushNotify:', e); }
 }
 
