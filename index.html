@@ -948,7 +948,7 @@ const CONFIG = {
   flowUpdate: 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d209eec985604daa85111314b2a9a7a5/triggers/manual/paths/invoke?api-version=1',
   flowNotify: 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0a951806d7da462fb0d55484fc2d1544/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Hh9bMGt-7AyXlxE201FImeJvtCv1fUj0uHhVRRsIQQQ',
   oneSignalAppId: '', // Set your production OneSignal App ID (placeholder IDs are rejected)
-  demoMode: false
+  demoMode: false // JavaScript boolean: use true / false (lowercase), not True / False
 };
 
 /* ── CONSTANTS ───────────────────────────────── */
@@ -1021,12 +1021,39 @@ const DEMO = [
 
 /* ── STATE ───────────────────────────────────── */
 let allNCs=[], currentNC=null, currentStep=1;
+const FLOW_TIMEOUT_MS = 12000;
+
+function getDemoMode(){
+  const raw = CONFIG.demoMode ?? CONFIG.DemoMode;
+  if (typeof raw === 'boolean') return raw;
+  if (typeof raw === 'string') {
+    const v = raw.trim().toLowerCase();
+    return v === 'true' || v === '1' || v === 'yes' || v === 'on';
+  }
+  return Boolean(raw);
+}
+
+function setSplashStatus(msg){
+  const el = document.getElementById('sp-status');
+  if(el) el.textContent = msg;
+}
+
+async function fetchWithTimeout(url, opts = {}, timeoutMs = FLOW_TIMEOUT_MS){
+  const ctl = new AbortController();
+  const t = setTimeout(()=>ctl.abort(), timeoutMs);
+  try{
+    return await fetch(url, {...opts, signal: ctl.signal});
+  }finally{
+    clearTimeout(t);
+  }
+}
 
 /* ── INIT ────────────────────────────────────── */
 window.addEventListener('DOMContentLoaded',()=>{
   showView('splash');
+  setSplashStatus('Initializing…');
   buildRepGrid();
-  setTimeout(loadAndShow, CONFIG.demoMode?900:300);
+  setTimeout(loadAndShow, getDemoMode()?900:300);
 });
 
 function buildRepGrid(){
@@ -1044,12 +1071,15 @@ function selRep(name,btn){
 
 /* ── DATA ────────────────────────────────────── */
 async function loadAndShow(){
+  const demoMode = getDemoMode();
   load(true);
   try{
-    if(CONFIG.demoMode){
+    if(demoMode){
+      setSplashStatus('Loading demo data…');
       allNCs=DEMO;
     }else{
-      const r=await fetch(CONFIG.flowGet,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+      setSplashStatus('Connecting to Power Automate…');
+      const r=await fetchWithTimeout(CONFIG.flowGet,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
       if(!r.ok) throw new Error(`Flow error: ${r.status}`);
       const d=await r.json();
       allNCs=Array.isArray(d)?d:(d.value||[]);
@@ -1059,8 +1089,12 @@ async function loadAndShow(){
     showView('dashboard');
     initOneSignal();
   }catch(e){
+    const timedOut = e?.name === 'AbortError';
+    const msg = timedOut ? `flowGet timeout after ${Math.round(FLOW_TIMEOUT_MS/1000)}s` : e.message;
+    setSplashStatus(timedOut ? 'Flow timed out — loading offline data…' : 'Flow unavailable — loading offline data…');
     toast('err','Load Error',e.message);
     allNCs=DEMO; renderKPIs(); populateMachineFilter(); applyFilters();
+    console.error('[QNS] flowGet unavailable:', msg);
     showView('dashboard');
     initOneSignal();
   }
