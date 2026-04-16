@@ -1777,6 +1777,8 @@ function isStandaloneIOSWebApp() {
 
 function isIOSDevice() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  return isIOS && window.navigator.standalone === true;
 }
 
 function isOneSignalConfigured() {
@@ -1822,6 +1824,8 @@ async function initOneSignal() {
       if (!supported) { toast('err','Push not supported','This browser/device does not support web push.'); return; }
       const permission = await getPushPermission(os);
       const granted = isPermissionGranted(permission);
+      const permission = await os.Notifications.permission;
+      const granted = permission === true || permission === 'granted';
       toast('info', 'Permission state', String(permission));
       if (granted) {
         _notifEnabled = true;
@@ -1866,6 +1870,9 @@ async function requestNotifPermission() {
   if (!window.OneSignalDeferred) {
     toast('err','OneSignal not ready','SDK is still loading, please try again.');
     return;
+  if (isStandaloneIOSWebApp() === false && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
+    toast('err','Open from Home Screen','On iPhone, install QNS to Home Screen first, then open it there to enable push.');
+    return;
   }
   window.OneSignalDeferred.push(async (os) => {
     toast('info','Requesting permission…','Please tap Allow when prompted');
@@ -1882,6 +1889,8 @@ async function requestNotifPermission() {
     }
     const permission = await getPushPermission(os);
     const granted = isPermissionGranted(permission);
+    const permission = await os.Notifications.permission;
+    const granted = permission === true || permission === 'granted';
     toast('info','Permission result', String(permission));
     if (granted) {
       _notifEnabled = true;
@@ -1943,7 +1952,7 @@ function deptLabel(d) {
           injection_process:'Injection Process',management:'Management',all:'All Depts'}[d]||d;
 }
 async function pushNotify(targetDept, title, message, ncId) {
-  if (!CONFIG.flowNotify || CONFIG.flowNotify === 'YOUR_POWER_AUTOMATE_NOTIFY_FLOW_URL') return;
+  if (!CONFIG.flowNotify || CONFIG.flowNotify === 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com/powerautomate/automations/direct/workflows/0a951806d7da462fb0d55484fc2d1544/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Hh9bMGt-7AyXlxE201FImeJvtCv1fUj0uHhVRRsIQQQ') return;
   try {
     const res = await fetch(CONFIG.flowNotify, {
       method: 'POST',
