@@ -1184,7 +1184,7 @@ function renderTable(data){
   });
 
   // Desktop rows
-  if(tb) tb.innerHTML=rows.map(({nc,rowCls,chip,lbl,clr})=>`<tr class="${rowCls}" onclick="openDetail(${nc.id})">
+  if(tb) tb.innerHTML=rows.map(({nc,rowCls,chip,lbl,clr})=>`<tr class="${rowCls}" onclick="openDetail('${nc.Title}')">
       <td class="mono">${nc.Title||'—'}</td>
       <td>${fmtDate(nc.Created)}</td>
       <td>${nc.Created_By||'—'}</td>
@@ -1195,12 +1195,12 @@ function renderTable(data){
       <td>${critBadge(nc.Criticality)}</td>
       <td>${statusBadge(nc.Status)}</td>
       <td>${chip}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openDetail(${nc.id})">View →</button></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openDetail('${nc.Title}')">View →</button></td>
     </tr>`).join('');
 
   // Mobile cards
   if(mob) mob.innerHTML=rows.map(({nc,cardCls,chip,lbl,clr})=>`
-    <div class="nc-card ${cardCls}" onclick="openDetail(${nc.id})">
+    <div class="nc-card ${cardCls}" onclick="openDetail('${nc.Title}')">
       <div class="nc-card-top">
         <span class="nc-card-id">${nc.Title||'—'}</span>
         <div class="nc-card-meta">${critBadge(nc.Criticality)}&nbsp;${statusBadge(nc.Status)}</div>
@@ -1211,7 +1211,7 @@ function renderTable(data){
       <div class="nc-card-row"><span class="nc-label">By</span><span class="nc-val">${nc.Created_By||'—'} · ${fmtDate(nc.Created)}</span></div>
       <div class="nc-card-bottom">
         <div>${chip}</div>
-        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openDetail(${nc.id})">View →</button>
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openDetail('${nc.Title}')">View →</button>
       </div>
     </div>`).join('');
 }
@@ -1415,7 +1415,7 @@ async function submitNC(){
 
 /* ── DETAIL ──────────────────────────────────── */
 function openDetail(id){
-  currentNC=allNCs.find(n=>n.id===id);
+  currentNC=allNCs.find(n=>n.Title===id||n.Title===String(id));
   if(!currentNC)return;
   renderDetail(currentNC);
   showView('detail');
@@ -1513,7 +1513,7 @@ async function routeNC(){
   if(!team){toast('err','Required','Select Injection Process or Injection Moulding.');return;}
   const dept = currentNC.NC_Dept || (currentNC.Machine_Number && MACHINE_DEPT[currentNC.Machine_Number]) || 'Injection';
   await saveUpdate({
-    id:currentNC.id, Status:'Assigned', Assigned_Team:team,
+    id:currentNC.Title, Status:'Assigned', Assigned_Team:team,
     NC_Dept: dept,
     Assigned_Person:document.getElementById('r-person').value,
     Routing_Date:new Date().toISOString()
@@ -1537,7 +1537,7 @@ async function submitCorrection(){
     actions, shots: parseIntSafe(shots, 0), resolved: corr
   });
   await saveUpdate({
-    id:currentNC.id,
+    id:currentNC.Title,
     Status: corr==='Yes'?'Corrected':'In Progress',
     Actions_Taken: actions,
     Shots_Validated: parseIntSafe(shots, 0),
@@ -1563,7 +1563,7 @@ async function submitVerification(){
   });
   const msg = close==='Yes'?`NC closed by ${appr}.`:`NC reopened — sent back to ${currentNC.Assigned_Team||'team'} for further action.`;
   await saveUpdate({
-    id:currentNC.id,
+    id:currentNC.Title,
     Status: close==='Yes'?'Closed':'Assigned',
     Is_Closed: close,
     QC_Notes: document.getElementById('v-notes').value,
