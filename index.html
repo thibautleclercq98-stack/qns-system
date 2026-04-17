@@ -318,7 +318,7 @@ td.mono{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--sw-na
 .pu-label{font-size:14px;font-weight:600;color:var(--gray-500);}
 .pu-hint{font-size:12px;color:var(--gray-400);margin-top:4px;}
 .photo-preview{display:none;margin-top:14px;position:relative;display:none;}
-.photo-preview img{width:100%;max-height:220px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--gray-200);}
+.photo-preview img{width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:var(--radius-sm);border:1px solid var(--gray-200);}
 .photo-preview-rm{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:var(--white);border:none;border-radius:50%;width:26px;height:26px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .photo-name{font-size:12px;color:var(--green);font-weight:600;margin-top:6px;display:none;}
 
@@ -1101,7 +1101,7 @@ async function loadAndShow(){
     const timedOut = e?.name === 'AbortError';
     const msg = timedOut ? `flowGet timeout after ${Math.round(FLOW_TIMEOUT_MS/1000)}s` : e.message;
     setSplashStatus(timedOut ? 'Flow timed out — loading offline data…' : 'Flow unavailable — loading offline data…');
-    toast('err','Load Error',e.message);
+    toast('err','Load Error',msg);
     allNCs=DEMO; renderKPIs(); populateMachineFilter(); applyFilters();
     console.error('[QNS] flowGet unavailable:', msg);
     showView('dashboard');
@@ -1185,34 +1185,34 @@ function renderTable(data){
   });
 
   // Desktop rows
-  if(tb) tb.innerHTML=rows.map(({nc,rowCls,chip,lbl,clr})=>`<tr class="${rowCls}" onclick="openDetail('${nc.Title}')">
-      <td class="mono">${nc.Title||'—'}</td>
+  if(tb) tb.innerHTML=rows.map(({nc,rowCls,chip,lbl,clr})=>`<tr class="${rowCls}" onclick="openDetail(decodeURIComponent('${enc(nc.Title)}'))">
+      <td class="mono">${eh(nc.Title||'—')}</td>
       <td>${fmtDate(nc.Created)}</td>
-      <td>${nc.Created_By||'—'}</td>
+      <td>${eh(nc.Created_By||'—')}</td>
       <td><span style="font-size:11px;font-weight:700;color:${clr}">${lbl}</span></td>
-      <td>${nc.Part_Name||'—'}</td>
-      <td class="mono">${nc.Machine_Number||'—'}</td>
-      <td>${nc.Issue_Reason||'—'}</td>
+      <td>${eh(nc.Part_Name||'—')}</td>
+      <td class="mono">${eh(nc.Machine_Number||'—')}</td>
+      <td>${eh(nc.Issue_Reason||'—')}</td>
       <td>${critBadge(nc.Criticality)}</td>
       <td>${statusBadge(nc.Status)}</td>
       <td>${chip}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openDetail('${nc.Title}')">View →</button></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openDetail(decodeURIComponent('${enc(nc.Title)}'))">View →</button></td>
     </tr>`).join('');
 
   // Mobile cards
   if(mob) mob.innerHTML=rows.map(({nc,cardCls,chip,lbl,clr})=>`
-    <div class="nc-card ${cardCls}" onclick="openDetail('${nc.Title}')">
+    <div class="nc-card ${cardCls}" onclick="openDetail(decodeURIComponent('${enc(nc.Title)}'))">
       <div class="nc-card-top">
-        <span class="nc-card-id">${nc.Title||'—'}</span>
+        <span class="nc-card-id">${eh(nc.Title||'—')}</span>
         <div class="nc-card-meta">${critBadge(nc.Criticality)}&nbsp;${statusBadge(nc.Status)}</div>
       </div>
-      <div class="nc-card-row"><span class="nc-label">Part</span><span class="nc-val">${nc.Part_Name||'—'}</span></div>
-      <div class="nc-card-row"><span class="nc-label">Machine</span><span class="nc-val">${nc.Machine_Number||'—'} · <strong style="color:${clr}">${lbl}</strong></span></div>
-      <div class="nc-card-row"><span class="nc-label">Issue</span><span class="nc-val">${nc.Issue_Reason||'—'}</span></div>
-      <div class="nc-card-row"><span class="nc-label">By</span><span class="nc-val">${nc.Created_By||'—'} · ${fmtDate(nc.Created)}</span></div>
+      <div class="nc-card-row"><span class="nc-label">Part</span><span class="nc-val">${eh(nc.Part_Name||'—')}</span></div>
+      <div class="nc-card-row"><span class="nc-label">Machine</span><span class="nc-val">${eh(nc.Machine_Number||'—')} · <strong style="color:${clr}">${lbl}</strong></span></div>
+      <div class="nc-card-row"><span class="nc-label">Issue</span><span class="nc-val">${eh(nc.Issue_Reason||'—')}</span></div>
+      <div class="nc-card-row"><span class="nc-label">By</span><span class="nc-val">${eh(nc.Created_By||'—')} · ${fmtDate(nc.Created)}</span></div>
       <div class="nc-card-bottom">
         <div>${chip}</div>
-        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openDetail('${nc.Title}')">View →</button>
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openDetail(decodeURIComponent('${enc(nc.Title)}'))">View →</button>
       </div>
     </div>`).join('');
 }
@@ -1413,7 +1413,7 @@ async function submitNC(){
   };
   load(true);
   try{
-    if(CONFIG.demoMode){
+    if(getDemoMode()){
       allNCs.unshift({...payload,id:Date.now(),Created:now.toISOString()});
       toast('ok','NC Submitted',`${qnsId} created — Team Lead notified (demo mode)`);
     }else{
@@ -1604,7 +1604,7 @@ if(close === 'No'){
 async function saveUpdate(patch,title,msg){
   load(true);
   try{
-    if(CONFIG.demoMode){Object.assign(currentNC,patch);}
+    if(getDemoMode()){Object.assign(currentNC,patch);}
     else{
       const r=await fetch(CONFIG.flowUpdate,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});
       if(!r.ok)throw new Error(`Flow error: ${r.status}`);
@@ -1638,6 +1638,16 @@ function setMono(id,v){const e=document.getElementById(id);if(e){e.textContent=v
 function vis(id,show){const e=document.getElementById(id);if(e)e.style.display=show?'':'none';}
 function parseJSONSafe(raw, fallback){if(!raw)return fallback;try{return JSON.parse(raw);}catch(e){return fallback;}}
 function parseIntSafe(value, fallback=0){const n=parseInt(value,10);return Number.isNaN(n)?fallback:n;}
+function eh(value){
+  return String(value??'').replace(/[&<>"']/g, c => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[c]));
+}
+function enc(value){return encodeURIComponent(String(value??''));}
 function load(on){document.getElementById('loader').classList.toggle('on',on);}
 function fmtDate(d){if(!d)return'—';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch{return'—';}}
 function toast(type,title,msg=''){
@@ -1651,6 +1661,18 @@ function toast(type,title,msg=''){
 
 /* ── PHOTO UPLOAD ────────────────────────────── */
 let photoBase64 = null;
+const PHOTO_CFG = {
+  maxSide: 1400,          // start as high as possible
+  minSide: 700,           // do not go below this unless absolutely needed
+  startQuality: 0.86,     // best default quality
+  minQuality: 0.52,       // floor to avoid unusable artifacts
+  qualityStep: 0.06,
+  resizeStep: 0.88,
+  // Excel cells are commonly limited to 32,767 chars.
+  hardCellLimit: 32767,
+  // Keep an internal buffer for safety and future metadata.
+  targetMaxChars: 26000
+};
 
 function puDrag(e, on) {
   e.preventDefault();
@@ -1684,18 +1706,82 @@ function puProcess(file) {
     const img = new Image();
     img.onload = function() {
       const canvas = document.createElement('canvas');
-      const MAX = 1200;
-      let w = img.width, h = img.height;
-      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
-      if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      photoBase64 = canvas.toDataURL('image/jpeg', 0.75);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        toast('err','Photo processing failed','Could not process image on this device.');
+        return;
+      }
+
+      // Try to keep the best quality possible while staying under Excel-safe length.
+      const ratio = img.width / img.height;
+      const maxSrcSide = Math.max(img.width, img.height);
+      let side = Math.min(PHOTO_CFG.maxSide, maxSrcSide);
+      let bestFit = null;
+      let smallest = null;
+
+      while (side >= PHOTO_CFG.minSide && !bestFit) {
+        let w = img.width >= img.height ? Math.round(side) : Math.round(side * ratio);
+        let h = img.width >= img.height ? Math.round(side / ratio) : Math.round(side);
+        // Never upscale
+        w = Math.min(w, img.width);
+        h = Math.min(h, img.height);
+        canvas.width = w;
+        canvas.height = h;
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+
+        for (let q = PHOTO_CFG.startQuality; q >= PHOTO_CFG.minQuality; q -= PHOTO_CFG.qualityStep) {
+          const encoded = canvas.toDataURL('image/jpeg', Math.max(PHOTO_CFG.minQuality, q));
+          if (!smallest || encoded.length < smallest.length) smallest = encoded; // always keep smallest fallback
+          if (encoded.length <= PHOTO_CFG.targetMaxChars) {
+            bestFit = encoded; // first fit at highest resolution/quality in this iteration
+            break;
+          }
+        }
+        if (bestFit) break;
+        side = Math.floor(side * PHOTO_CFG.resizeStep);
+      }
+
+      // Last-resort pass for extreme images: go smaller and lower quality until target fits.
+      if (!bestFit) {
+        let side2 = Math.max(560, Math.floor(PHOTO_CFG.minSide * 0.8));
+        while (side2 >= 360 && !bestFit) {
+          let w = img.width >= img.height ? side2 : Math.round(side2 * ratio);
+          let h = img.width >= img.height ? Math.round(side2 / ratio) : side2;
+          w = Math.min(w, img.width);
+          h = Math.min(h, img.height);
+          canvas.width = w;
+          canvas.height = h;
+          ctx.clearRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+
+          for (let q = PHOTO_CFG.minQuality; q >= 0.35; q -= 0.05) {
+            const encoded = canvas.toDataURL('image/jpeg', Math.max(0.35, q));
+            if (!smallest || encoded.length < smallest.length) smallest = encoded;
+            if (encoded.length <= PHOTO_CFG.targetMaxChars) {
+              bestFit = encoded;
+              break;
+            }
+          }
+          side2 = Math.floor(side2 * 0.86);
+        }
+      }
+
+      photoBase64 = bestFit || smallest;
+      if (!photoBase64) {
+        toast('err','Photo processing failed','Unable to encode this image.');
+        return;
+      }
+      if (photoBase64.length > PHOTO_CFG.hardCellLimit) {
+        toast('err','Image too large for Excel','Please crop the photo or retake it closer before uploading.');
+        photoBase64 = null;
+        return;
+      }
       // Show preview
       document.getElementById('pu-img').src = photoBase64;
       document.getElementById('pu-preview').style.display = 'block';
       document.getElementById('pu-name').style.display = 'block';
-      document.getElementById('pu-name').textContent = '✓ ' + file.name;
+      document.getElementById('pu-name').textContent = `✓ ${file.name} (${Math.round(photoBase64.length/1024)} KB encoded)`;
     };
     img.src = e.target.result;
   };
@@ -1757,14 +1843,14 @@ function renderCorrectionHistory(nc) {
       <div class="history-entry he-correction">
         <div class="he-meta">
           <span class="he-badge he-b-corr">Correction</span>
-          <span>${e.date}</span>
-          <span>·</span><span>${e.by||'Team'}</span>
+          <span>${eh(e.date)}</span>
+          <span>·</span><span>${eh(e.by||'Team')}</span>
           ${!isAsmNC && e.shots ? `<span>·</span><span>${e.shots} shots</span>` : ''}
           ${e.resolved==='No'
             ? '<span style="color:var(--amber);font-weight:600;">⚠ Not yet fixed</span>'
             : '<span style="color:var(--green);font-weight:600;">✓ Fixed</span>'}
         </div>
-        <div class="he-text">${e.actions}</div>
+        <div class="he-text">${eh(e.actions)}</div>
       </div>`).join('');
   }
 
@@ -1808,27 +1894,43 @@ function renderQCHistory(nc) {
     <div class="history-entry ${e.closed==='No'?'he-reopen':'he-correction'}">
       <div class="he-meta">
         <span class="he-badge ${e.closed==='No'?'he-b-reopen':'he-b-corr'}">${e.closed==='No'?'Reopened':'Approved'}</span>
-        <span>${e.date}</span>
-        <span>·</span><span>${e.approver}</span>
-        ${e.dept?`<span>·</span><span>${e.dept}</span>`:''}
+        <span>${eh(e.date)}</span>
+        <span>·</span><span>${eh(e.approver)}</span>
+        ${e.dept?`<span>·</span><span>${eh(e.dept)}</span>`:''}
       </div>
-      ${e.notes?`<div class="he-text">${e.notes}</div>`:''}
+      ${e.notes?`<div class="he-text">${eh(e.notes)}</div>`:''}
     </div>`).join('');
 }
 
 
-/* ── iOS HOME SCREEN HINT ──────────────────────── */
+/* ── MOBILE HOME SCREEN HINT (iOS / Android only) ───────────── */
 (function(){
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isStandalone = window.navigator.standalone === true;
+  const ua = navigator.userAgent || '';
+  const isIOS = /iphone|ipad|ipod/i.test(ua);
+  const isAndroid = /android/i.test(ua);
+  const isMobile = isIOS || isAndroid;
+  const hint = document.getElementById('ios-hint');
+  if(!hint) return;
+  if(!isMobile){ hint.style.display='none'; return; } // never show on Windows/macOS desktop browsers
+
   const dismissed = localStorage.getItem('qns-hint-dismissed');
-  if(isIOS && !isStandalone && !dismissed){
-    // Show hint after 3 seconds
-    setTimeout(()=>{
-      const el = document.getElementById('ios-hint');
-      if(el) el.style.display='flex';
-    }, 3000);
+  const isStandalone =
+    window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if(dismissed || isStandalone) return;
+
+  const titleEl = document.getElementById('ios-hint-title');
+  const bodyEl = document.getElementById('ios-hint-body');
+  if(isAndroid){
+    if(titleEl) titleEl.textContent = 'Install QNS on your Home Screen';
+    if(bodyEl) bodyEl.innerHTML = 'Tap <strong>⋮ Menu</strong> → <strong>Add to Home screen</strong> for quick access';
+  }else{
+    if(titleEl) titleEl.textContent = 'Add QNS to your Home Screen';
+    if(bodyEl) bodyEl.innerHTML = 'Tap <strong>⎙ Share</strong> → <strong>Add to Home Screen</strong> for quick access';
   }
+
+  // Show hint after 3 seconds
+  setTimeout(()=>{ hint.style.display='flex'; }, 3000);
 })();
 
 /* ═══════════════════════════════════════════════════════
@@ -2036,12 +2138,12 @@ async function pushNotify(targetDept, title, message, ncId) {
 <div id="ios-hint" style="display:none;position:fixed;bottom:0;left:0;right:0;
   background:var(--sw-navy);color:var(--white);padding:14px 20px 
   calc(14px + env(safe-area-inset-bottom));
-  z-index:9998;display:flex;align-items:center;gap:12px;
+  z-index:9998;align-items:center;gap:12px;
   box-shadow:0 -4px 20px rgba(0,0,0,.3);font-size:13px;">
   <div style="font-size:28px;flex-shrink:0;">📲</div>
   <div style="flex:1;">
-    <div style="font-weight:700;margin-bottom:2px;">Add QNS to your Home Screen</div>
-    <div style="color:rgba(255,255,255,.65);font-size:12px;">Tap <strong>⎙ Share</strong> → <strong>Add to Home Screen</strong> for quick access</div>
+    <div id="ios-hint-title" style="font-weight:700;margin-bottom:2px;">Add QNS to your Home Screen</div>
+    <div id="ios-hint-body" style="color:rgba(255,255,255,.65);font-size:12px;">Tap <strong>⎙ Share</strong> → <strong>Add to Home Screen</strong> for quick access</div>
   </div>
   <button onclick="document.getElementById('ios-hint').style.display='none';localStorage.setItem('qns-hint-dismissed','1')"
     style="background:transparent;border:none;color:rgba(255,255,255,.5);font-size:22px;cursor:pointer;padding:4px;">✕</button>
