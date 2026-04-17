@@ -1672,6 +1672,8 @@ const PHOTO_CFG = {
   hardCellLimit: 32767,
   // Keep an internal buffer for safety and future metadata.
   targetMaxChars: 26000
+  // Keep a buffer for safety and the data URL prefix.
+  targetMaxChars: 30000
 };
 
 function puDrag(e, on) {
@@ -1720,6 +1722,9 @@ function puProcess(file) {
       let smallest = null;
 
       while (side >= PHOTO_CFG.minSide && !bestFit) {
+      let best = null;
+
+      while (side >= PHOTO_CFG.minSide && !best) {
         let w = img.width >= img.height ? Math.round(side) : Math.round(side * ratio);
         let h = img.width >= img.height ? Math.round(side / ratio) : Math.round(side);
         // Never upscale
@@ -1777,6 +1782,31 @@ function puProcess(file) {
         photoBase64 = null;
         return;
       }
+          if (!best || encoded.length < best.length) best = encoded; // fallback smallest seen
+          if (encoded.length <= PHOTO_CFG.targetMaxChars) {
+            best = encoded; // first fit at highest resolution/quality in this iteration
+            break;
+          }
+        }
+        if (best && best.length <= PHOTO_CFG.targetMaxChars) break;
+        side = Math.floor(side * PHOTO_CFG.resizeStep);
+      }
+
+      // Last-resort pass for very large photos (ultra-high-res panoramas, etc.)
+      if (!best || best.length > PHOTO_CFG.targetMaxChars) {
+        const finalSide = Math.max(560, Math.floor(PHOTO_CFG.minSide * 0.8));
+        let w = img.width >= img.height ? finalSide : Math.round(finalSide * ratio);
+        let h = img.width >= img.height ? Math.round(finalSide / ratio) : finalSide;
+        w = Math.min(w, img.width);
+        h = Math.min(h, img.height);
+        canvas.width = w;
+        canvas.height = h;
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        best = canvas.toDataURL('image/jpeg', PHOTO_CFG.minQuality);
+      }
+
+      photoBase64 = best;
       // Show preview
       document.getElementById('pu-img').src = photoBase64;
       document.getElementById('pu-preview').style.display = 'block';
