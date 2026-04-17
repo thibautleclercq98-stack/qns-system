@@ -279,8 +279,8 @@ td.mono{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--sw-na
 .b-asgn .bdot{background:var(--amber);}
 .b-prog{background:#FFF4E0;color:#8B5E00;}
 .b-prog .bdot{background:#C47B00;}
-.b-corr{background:var(--green-lt);color:var(--green);}
-.b-corr .bdot{background:var(--green);}
+.b-corr{background:#F0E8FF;color:#6B21A8;}
+.b-corr .bdot{background:#6B21A8;}
 .b-clos{background:#E8F5E8;color:var(--green);}
 .b-clos .bdot{background:var(--green);}
 .b-esc{background:var(--sw-red-lt);color:var(--sw-red);}
@@ -325,8 +325,9 @@ td.mono{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--sw-na
 /* ROW HIGHLIGHTS */
 tbody tr.row-critical { background: #FFF0EE !important; }
 tbody tr.row-open     { background: #F0F6FF !important; }
+tbody tr.row-corrected{ background: #F5F0FF !important; }
 tbody tr.row-overdue  { background: #FFE8E5 !important; animation: pulse-row 2.5s ease-in-out infinite; }
-tbody tr.row-critical:hover, tbody tr.row-open:hover, tbody tr.row-overdue:hover { filter: brightness(.97); }
+tbody tr.row-critical:hover, tbody tr.row-open:hover, tbody tr.row-corrected:hover, tbody tr.row-overdue:hover { filter: brightness(.97); }
 @keyframes pulse-row { 0%,100%{background:#FFE8E5} 50%{background:#FFCFC9} }
 .overdue-badge { display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;background:#E8311A;color:#fff;font-size:11px;font-weight:800;animation:pulsebadge 1.5s ease-in-out infinite; }
 @keyframes pulsebadge { 0%,100%{opacity:1} 50%{opacity:.65} }
@@ -952,7 +953,7 @@ const CONFIG = {
 };
 
 /* ── CONSTANTS ───────────────────────────────── */
-const STAFF = ['Ruby Cedillo','Juan Martinez','Susie Quintana','Maria Garza','Sharri Smith','Luis Salgado','Richard Anaya','Jose Ramos','Kevin Marroquin','Fabian Mata','Tonya Tilicke','Gabriel Hernandez','Dan Hotchkiss','Gian Luca Cavriani','Roberto Hernandez','Rickey Manaway','Salvador Prieto','Roger Rodriguez','Luis Rodriguez','Cristobal Anaya','Not Listed'];
+const STAFF = ['Juan Martinez','Susie Quintana','Maria Garza','Sharri Smith','Gabriel Hernandez','Not Listed'];
 // ★ MOLD OPTIONS PER MACHINE — update this list whenever a mold moves
 const MOLD_OPTIONS = {
   IM00: ['1-32A','1-32B'],
@@ -1173,7 +1174,7 @@ function renderTable(data){
     const d = daysOpen(nc);
     const isOpen    = nc.Status!=='Closed';
     const isOverdue = isOpen && d>=30;
-    const rowCls    = isOverdue?'row-overdue':nc.Criticality==='Critical Issue'&&isOpen?'row-critical':isOpen?'row-open':'';
+    const rowCls    = isOverdue?'row-overdue':nc.Status==='Corrected'?'row-corrected':nc.Criticality==='Critical Issue'&&isOpen?'row-critical':isOpen?'row-open':'';
     const cardCls   = nc.Status==='Closed'?'nc-closed':isOverdue?'nc-overdue':nc.Criticality==='Critical Issue'?'nc-critical':'nc-open';
     const chip      = nc.Status==='Closed'?`<span class="dchip d-ok">${d}d</span>`:
       isOverdue?`<span class="overdue-badge">🔥 ${d}d OVERDUE</span>`:
@@ -1838,6 +1839,12 @@ let _notifEnabled = localStorage.getItem('qns_notif') === 'true';
 let _pendingNotifRequest = false;
 const DEFAULT_ONESIGNAL_APP_ID = '1e0fabbb-6595-4247-894c-1eab1e9019a5';
 
+function isMobileDevice() {
+  return /iphone|ipad|ipod|android|mobile/i.test(navigator.userAgent);
+}
+// Auto-dismiss banner on desktop so it never shows
+if (!isMobileDevice()) localStorage.setItem('qns_banner_dismissed', 'true');
+
 function isStandaloneIOSWebApp() {
   return isIOSDevice() && window.navigator.standalone === true;
 }
@@ -1899,7 +1906,7 @@ async function initOneSignal() {
           toast('ok','Tag set','department = ' + _notifDept);
         }
         updateNotifNavBtn();
-      } else if (!localStorage.getItem('qns_banner_dismissed')) {
+      } else if (!localStorage.getItem('qns_banner_dismissed') && isMobileDevice()) {
         setTimeout(showNotifBanner, 1500);
       }
     });
@@ -1910,6 +1917,7 @@ async function initOneSignal() {
 }
 
 function showNotifBanner() {
+  if (!isMobileDevice()) return;
   const el = document.getElementById('notif-banner');
   if (el) el.style.transform = 'translateY(0)';
 }
