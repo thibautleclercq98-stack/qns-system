@@ -318,7 +318,7 @@ td.mono{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--sw-na
 .pu-label{font-size:14px;font-weight:600;color:var(--gray-500);}
 .pu-hint{font-size:12px;color:var(--gray-400);margin-top:4px;}
 .photo-preview{display:none;margin-top:14px;position:relative;display:none;}
-.photo-preview img{width:100%;max-height:220px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--gray-200);}
+.photo-preview img{width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:var(--radius-sm);border:1px solid var(--gray-200);}
 .photo-preview-rm{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:var(--white);border:none;border-radius:50%;width:26px;height:26px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .photo-name{font-size:12px;color:var(--green);font-weight:600;margin-top:6px;display:none;}
 
@@ -1669,6 +1669,9 @@ const PHOTO_CFG = {
   qualityStep: 0.06,
   resizeStep: 0.88,
   // Excel cells are commonly limited to 32,767 chars.
+  hardCellLimit: 32767,
+  // Keep an internal buffer for safety and future metadata.
+  targetMaxChars: 26000
   // Keep a buffer for safety and the data URL prefix.
   targetMaxChars: 30000
 };
@@ -1715,6 +1718,10 @@ function puProcess(file) {
       const ratio = img.width / img.height;
       const maxSrcSide = Math.max(img.width, img.height);
       let side = Math.min(PHOTO_CFG.maxSide, maxSrcSide);
+      let bestFit = null;
+      let smallest = null;
+
+      while (side >= PHOTO_CFG.minSide && !bestFit) {
       let best = null;
 
       while (side >= PHOTO_CFG.minSide && !best) {
@@ -1730,6 +1737,51 @@ function puProcess(file) {
 
         for (let q = PHOTO_CFG.startQuality; q >= PHOTO_CFG.minQuality; q -= PHOTO_CFG.qualityStep) {
           const encoded = canvas.toDataURL('image/jpeg', Math.max(PHOTO_CFG.minQuality, q));
+          if (!smallest || encoded.length < smallest.length) smallest = encoded; // always keep smallest fallback
+          if (encoded.length <= PHOTO_CFG.targetMaxChars) {
+            bestFit = encoded; // first fit at highest resolution/quality in this iteration
+            break;
+          }
+        }
+        if (bestFit) break;
+        side = Math.floor(side * PHOTO_CFG.resizeStep);
+      }
+
+      // Last-resort pass for extreme images: go smaller and lower quality until target fits.
+      if (!bestFit) {
+        let side2 = Math.max(560, Math.floor(PHOTO_CFG.minSide * 0.8));
+        while (side2 >= 360 && !bestFit) {
+          let w = img.width >= img.height ? side2 : Math.round(side2 * ratio);
+          let h = img.width >= img.height ? Math.round(side2 / ratio) : side2;
+          w = Math.min(w, img.width);
+          h = Math.min(h, img.height);
+          canvas.width = w;
+          canvas.height = h;
+          ctx.clearRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+
+          for (let q = PHOTO_CFG.minQuality; q >= 0.35; q -= 0.05) {
+            const encoded = canvas.toDataURL('image/jpeg', Math.max(0.35, q));
+            if (!smallest || encoded.length < smallest.length) smallest = encoded;
+            if (encoded.length <= PHOTO_CFG.targetMaxChars) {
+              bestFit = encoded;
+              break;
+            }
+          }
+          side2 = Math.floor(side2 * 0.86);
+        }
+      }
+
+      photoBase64 = bestFit || smallest;
+      if (!photoBase64) {
+        toast('err','Photo processing failed','Unable to encode this image.');
+        return;
+      }
+      if (photoBase64.length > PHOTO_CFG.hardCellLimit) {
+        toast('err','Image too large for Excel','Please crop the photo or retake it closer before uploading.');
+        photoBase64 = null;
+        return;
+      }
           if (!best || encoded.length < best.length) best = encoded; // fallback smallest seen
           if (encoded.length <= PHOTO_CFG.targetMaxChars) {
             best = encoded; // first fit at highest resolution/quality in this iteration
