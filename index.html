@@ -1053,7 +1053,15 @@ async function loadAndShow(){
       const r=await fetch(CONFIG.flowGet,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
       if(!r.ok) throw new Error(`Flow error: ${r.status}`);
       const d=await r.json();
-      allNCs=Array.isArray(d)?d:(d.value||[]);
+     const raw=Array.isArray(d)?d:(d.value||[]);
+      // Excel returns column names with leading/trailing spaces — strip them all
+      allNCs = raw.map(row => {
+        const clean = {};
+        Object.keys(row).forEach(k => {
+          clean[k.trim()] = typeof row[k] === 'string' ? row[k].trim() : row[k];
+        });
+        return clean;
+      }).filter(n => n.Title && n.Title !== '');
     }
     renderKPIs(); populateMachineFilter(); applyFilters();
     document.getElementById('refresh-ts').textContent=`— updated ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
