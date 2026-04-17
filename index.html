@@ -318,7 +318,7 @@ td.mono{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--sw-na
 .pu-label{font-size:14px;font-weight:600;color:var(--gray-500);}
 .pu-hint{font-size:12px;color:var(--gray-400);margin-top:4px;}
 .photo-preview{display:none;margin-top:14px;position:relative;display:none;}
-.photo-preview img{width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:var(--radius-sm);border:1px solid var(--gray-200);}
+.photo-preview img{width:100%;max-height:220px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--gray-200);}
 .photo-preview-rm{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:var(--white);border:none;border-radius:50%;width:26px;height:26px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .photo-name{font-size:12px;color:var(--green);font-weight:600;margin-top:6px;display:none;}
 
@@ -1022,39 +1022,12 @@ const DEMO = [
 
 /* ── STATE ───────────────────────────────────── */
 let allNCs=[], currentNC=null, currentStep=1;
-const FLOW_TIMEOUT_MS = 12000;
-
-function getDemoMode(){
-  const raw = CONFIG.demoMode ?? CONFIG.DemoMode;
-  if (typeof raw === 'boolean') return raw;
-  if (typeof raw === 'string') {
-    const v = raw.trim().toLowerCase();
-    return v === 'true' || v === '1' || v === 'yes' || v === 'on';
-  }
-  return Boolean(raw);
-}
-
-function setSplashStatus(msg){
-  const el = document.getElementById('sp-status');
-  if(el) el.textContent = msg;
-}
-
-async function fetchWithTimeout(url, opts = {}, timeoutMs = FLOW_TIMEOUT_MS){
-  const ctl = new AbortController();
-  const t = setTimeout(()=>ctl.abort(), timeoutMs);
-  try{
-    return await fetch(url, {...opts, signal: ctl.signal});
-  }finally{
-    clearTimeout(t);
-  }
-}
 
 /* ── INIT ────────────────────────────────────── */
 window.addEventListener('DOMContentLoaded',()=>{
   showView('splash');
-  setSplashStatus('Initializing…');
   buildRepGrid();
-  setTimeout(loadAndShow, getDemoMode()?900:300);
+  setTimeout(loadAndShow, CONFIG.demoMode?900:300);
 });
 
 function buildRepGrid(){
@@ -1072,38 +1045,23 @@ function selRep(name,btn){
 
 /* ── DATA ────────────────────────────────────── */
 async function loadAndShow(){
-  const demoMode = getDemoMode();
   load(true);
   try{
-    if(demoMode){
-      setSplashStatus('Loading demo data…');
+    if(CONFIG.demoMode){
       allNCs=DEMO;
     }else{
-      setSplashStatus('Connecting to Power Automate…');
-      const r=await fetchWithTimeout(CONFIG.flowGet,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+      const r=await fetch(CONFIG.flowGet,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
       if(!r.ok) throw new Error(`Flow error: ${r.status}`);
       const d=await r.json();
-      const raw=Array.isArray(d)?d:(d.value||[]);
-      // Excel returns field names with leading/trailing spaces — strip them all
-      allNCs = raw.map(row => {
-        const clean = {};
-        Object.keys(row).forEach(k => {
-          clean[k.trim()] = typeof row[k] === 'string' ? row[k].trim() : row[k];
-        });
-        return clean;
-      }).filter(n => n.Title && n.Title !== '');
+      allNCs=Array.isArray(d)?d:(d.value||[]);
     }
     renderKPIs(); populateMachineFilter(); applyFilters();
     document.getElementById('refresh-ts').textContent=`— updated ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
     showView('dashboard');
     initOneSignal();
   }catch(e){
-    const timedOut = e?.name === 'AbortError';
-    const msg = timedOut ? `flowGet timeout after ${Math.round(FLOW_TIMEOUT_MS/1000)}s` : e.message;
-    setSplashStatus(timedOut ? 'Flow timed out — loading offline data…' : 'Flow unavailable — loading offline data…');
-    toast('err','Load Error',msg);
+    toast('err','Load Error',e.message);
     allNCs=DEMO; renderKPIs(); populateMachineFilter(); applyFilters();
-    console.error('[QNS] flowGet unavailable:', msg);
     showView('dashboard');
     initOneSignal();
   }
@@ -1174,7 +1132,7 @@ function renderTable(data){
     const d = daysOpen(nc);
     const isOpen    = nc.Status!=='Closed';
     const isOverdue = isOpen && d>=30;
-    const rowCls    = isOverdue?'row-overdue':nc.Status==='Corrected'?'row-corrected':nc.Criticality==='Critical Issue'&&isOpen?'row-critical':isOpen?'row-open':'';
+    const rowCls    = isOverdue?'row-overdue':nc.Criticality==='Critical Issue'&&isOpen?'row-critical':isOpen?'row-open':'';
     const cardCls   = nc.Status==='Closed'?'nc-closed':isOverdue?'nc-overdue':nc.Criticality==='Critical Issue'?'nc-critical':'nc-open';
     const chip      = nc.Status==='Closed'?`<span class="dchip d-ok">${d}d</span>`:
       isOverdue?`<span class="overdue-badge">🔥 ${d}d OVERDUE</span>`:
@@ -1185,49 +1143,36 @@ function renderTable(data){
   });
 
   // Desktop rows
-  if(tb) tb.innerHTML=rows.map(({nc,rowCls,chip,lbl,clr})=>`<tr class="${rowCls}" onclick="openDetail(decodeURIComponent('${enc(nc.Title)}'))">
-      <td class="mono">${eh(nc.Title||'—')}</td>
+  if(tb) tb.innerHTML=rows.map(({nc,rowCls,chip,lbl,clr})=>`<tr class="${rowCls}" onclick="openDetail('${encodeURIComponent(nc.Title||'')}')">
+      <td class="mono">${nc.Title||'—'}</td>
       <td>${fmtDate(nc.Created)}</td>
-      <td>${eh(nc.Created_By||'—')}</td>
+      <td>${nc.Created_By||'—'}</td>
       <td><span style="font-size:11px;font-weight:700;color:${clr}">${lbl}</span></td>
-      <td>${eh(nc.Part_Name||'—')}</td>
-      <td class="mono">${eh(nc.Machine_Number||'—')}</td>
-      <td>${eh(nc.Issue_Reason||'—')}</td>
+      <td>${nc.Part_Name||'—'}</td>
+      <td class="mono">${nc.Machine_Number||'—'}</td>
+      <td>${nc.Issue_Reason||'—'}</td>
       <td>${critBadge(nc.Criticality)}</td>
       <td>${statusBadge(nc.Status)}</td>
       <td>${chip}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openDetail(decodeURIComponent('${enc(nc.Title)}'))">View →</button></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openDetail('${encodeURIComponent(nc.Title||'')}')">View →</button></td>
     </tr>`).join('');
 
   // Mobile cards
   if(mob) mob.innerHTML=rows.map(({nc,cardCls,chip,lbl,clr})=>`
-    <div class="nc-card ${cardCls}" onclick="openDetail(decodeURIComponent('${enc(nc.Title)}'))">
+    <div class="nc-card ${cardCls}" onclick="openDetail('${encodeURIComponent(nc.Title||'')}')">
       <div class="nc-card-top">
-        <span class="nc-card-id">${eh(nc.Title||'—')}</span>
+        <span class="nc-card-id">${nc.Title||'—'}</span>
         <div class="nc-card-meta">${critBadge(nc.Criticality)}&nbsp;${statusBadge(nc.Status)}</div>
       </div>
-      <div class="nc-card-row"><span class="nc-label">Part</span><span class="nc-val">${eh(nc.Part_Name||'—')}</span></div>
-      <div class="nc-card-row"><span class="nc-label">Machine</span><span class="nc-val">${eh(nc.Machine_Number||'—')} · <strong style="color:${clr}">${lbl}</strong></span></div>
-      <div class="nc-card-row"><span class="nc-label">Issue</span><span class="nc-val">${eh(nc.Issue_Reason||'—')}</span></div>
-      <div class="nc-card-row"><span class="nc-label">By</span><span class="nc-val">${eh(nc.Created_By||'—')} · ${fmtDate(nc.Created)}</span></div>
+      <div class="nc-card-row"><span class="nc-label">Part</span><span class="nc-val">${nc.Part_Name||'—'}</span></div>
+      <div class="nc-card-row"><span class="nc-label">Machine</span><span class="nc-val">${nc.Machine_Number||'—'} · <strong style="color:${clr}">${lbl}</strong></span></div>
+      <div class="nc-card-row"><span class="nc-label">Issue</span><span class="nc-val">${nc.Issue_Reason||'—'}</span></div>
+      <div class="nc-card-row"><span class="nc-label">By</span><span class="nc-val">${nc.Created_By||'—'} · ${fmtDate(nc.Created)}</span></div>
       <div class="nc-card-bottom">
         <div>${chip}</div>
-        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openDetail(decodeURIComponent('${enc(nc.Title)}'))">View →</button>
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openDetail('${encodeURIComponent(nc.Title||'')}')">View →</button>
       </div>
     </div>`).join('');
-}
-
-/* ── QNS ID GENERATOR ────────────────────────── */
-function generateQnsId(base) {
-  // Check if base ID already exists, if so add A, B, C suffix
-  const existing = allNCs.map(n => n.Title).filter(t => t && t.startsWith(base));
-  if (!existing.length) return base;
-  // Find next available suffix
-  const suffixes = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-  for (const s of suffixes) {
-    if (!existing.includes(base + s)) return base + s;
-  }
-  return base; // fallback
 }
 
 /* ── WIZARD ──────────────────────────────────── */
@@ -1366,7 +1311,7 @@ function buildReview(){
   const dd=String(now.getDate()).padStart(2,'0');
   const mach=document.getElementById('w-mach').value||'IMXX';
   const isAsm = ASSEMBLY_MACHINES.has(mach);
-  document.getElementById('rv-id').textContent=generateQnsId(`${yy}${mm}${dd}${mach}`);
+  document.getElementById('rv-id').textContent=`${yy}${mm}${dd}${mach}`;
   set('rv-rep',document.getElementById('w-rep').value);
   set('rv-mach',document.getElementById('w-mach').value + ' — ' + (isAsm?'🔩 Assembly':'⚙ Injection'));
   set('rv-mold',isAsm ? 'N/A (Assembly)' : (document.getElementById('w-mold').value||'—'));
@@ -1392,7 +1337,7 @@ async function submitNC(){
   const mm=String(now.getMonth()+1).padStart(2,'0');
   const dd=String(now.getDate()).padStart(2,'0');
   const mach=document.getElementById('w-mach').value;
-  const qnsId=generateQnsId(`${yy}${mm}${dd}${mach}`);
+  const qnsId=`${yy}${mm}${dd}${mach}`;
   const isAssemblyMach = ASSEMBLY_MACHINES.has(mach);
   const payload={
     Title:qnsId, Status: isAssemblyMach ? 'Assigned' : 'Open',
@@ -1413,7 +1358,7 @@ async function submitNC(){
   };
   load(true);
   try{
-    if(getDemoMode()){
+    if(CONFIG.demoMode){
       allNCs.unshift({...payload,id:Date.now(),Created:now.toISOString()});
       toast('ok','NC Submitted',`${qnsId} created — Team Lead notified (demo mode)`);
     }else{
@@ -1429,7 +1374,8 @@ async function submitNC(){
 
 /* ── DETAIL ──────────────────────────────────── */
 function openDetail(id){
-  currentNC=allNCs.find(n=>n.Title===id||n.Title===String(id));
+  const decoded = decodeURIComponent(id);
+  currentNC=allNCs.find(n=>n.Title===decoded||n.Title===String(decoded));
   if(!currentNC)return;
   renderDetail(currentNC);
   showView('detail');
@@ -1489,7 +1435,7 @@ function renderDetail(nc){
     renderQCHistory(nc);
   }
   if(s==='Closed'){set('d-sa',nc.Actions_Taken||'—');
-    const corrLog = nc.Correction_Log ? parseJSONSafe(nc.Correction_Log, []) : [];
+    const corrLog = nc.Correction_Log ? JSON.parse(nc.Correction_Log) : [];
     set('d-sa-count', corrLog.length > 0 ? `${corrLog.length} correction ${corrLog.length===1?'entry':'entries'} logged` : '—');setMono('d-ss',nc.Shots_Validated!=null?nc.Shots_Validated:'—');set('d-scb',nc.Corrected_By||'—');setMono('d-scd',fmtDate(nc.Correction_Date));set('d-st',nc.Assigned_Team||'—');set('d-sqn',nc.QC_Notes||'—');set('d-sqa',nc.Quality_Approver||'—');setMono('d-sdc',fmtDate(nc.Date_Closed));}
   buildTimeline(nc);buildSidebarActions(nc);
 }
@@ -1544,17 +1490,17 @@ async function submitCorrection(){
   if(ncDeptCorr !== 'Assembly' && !shots){toast('err','Required','Enter number of shots validated.');return;}
   // Append to history log
   const now = new Date();
-  const existing = currentNC.Correction_Log ? parseJSONSafe(currentNC.Correction_Log, []) : [];
+  const existing = currentNC.Correction_Log ? JSON.parse(currentNC.Correction_Log) : [];
   existing.push({
     date: now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
     by: currentNC.Assigned_Team||'Team',
-    actions, shots: parseIntSafe(shots, 0), resolved: corr
+    actions, shots: parseInt(shots), resolved: corr
   });
   await saveUpdate({
     id:currentNC.Title,
     Status: corr==='Yes'?'Corrected':'In Progress',
     Actions_Taken: actions,
-    Shots_Validated: String(parseIntSafe(shots, 0)),
+    Shots_Validated: parseInt(shots),
     Corrected_By: currentNC.Assigned_Team||'Team',
     Correction_Date: now.toISOString(),
     Correction_Log: JSON.stringify(existing)
@@ -1569,7 +1515,7 @@ async function submitVerification(){
   const close = document.getElementById('v-close').value;
   if(!appr){toast('err','Required','Please select a QC approver.');return;}
   const now = new Date();
-  const qcLog = currentNC.QC_Review_Log ? parseJSONSafe(currentNC.QC_Review_Log, []) : [];
+  const qcLog = currentNC.QC_Review_Log ? JSON.parse(currentNC.QC_Review_Log) : [];
   qcLog.push({
     date: now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
     approver: appr, closed: close,
@@ -1585,18 +1531,6 @@ async function submitVerification(){
     QC_Review_Log: JSON.stringify(qcLog),
     Date_Closed: close==='Yes'?now.toISOString():''
   },'QC Sign-Off Complete', msg);
-  // ★ Push notification → if reopened, alert the assigned team to fix it again
-if(close === 'No'){
-  const assignedTeam = currentNC.Assigned_Team || '';
-  const reopenDept = assignedTeam === 'Injection Moulding' ? 'injection_molding'
-                   : assignedTeam === 'Injection Process'  ? 'injection_process'
-                   : assignedTeam === 'Assembly Team'      ? 'assembly'
-                   : 'injection_molding';
-  pushNotify(reopenDept,
-    `⚠️ NC Returned: ${currentNC.Title}`,
-    `Quality rejected — ${currentNC.Part_Name} on ${currentNC.Machine_Number} needs more work`,
-    currentNC.Title);
-}
   // Reset form
   document.getElementById('v-notes').value='';
   document.getElementById('v-appr').value='';
@@ -1604,7 +1538,7 @@ if(close === 'No'){
 async function saveUpdate(patch,title,msg){
   load(true);
   try{
-    if(getDemoMode()){Object.assign(currentNC,patch);}
+    if(CONFIG.demoMode){Object.assign(currentNC,patch);}
     else{
       const r=await fetch(CONFIG.flowUpdate,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});
       if(!r.ok)throw new Error(`Flow error: ${r.status}`);
@@ -1636,18 +1570,6 @@ function daysChip(nc){const d=daysOpen(nc);const cls=nc.Status==='Closed'?'d-ok'
 function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v??'—';}
 function setMono(id,v){const e=document.getElementById(id);if(e){e.textContent=v??'—';e.classList.add('mono');}}
 function vis(id,show){const e=document.getElementById(id);if(e)e.style.display=show?'':'none';}
-function parseJSONSafe(raw, fallback){if(!raw)return fallback;try{return JSON.parse(raw);}catch(e){return fallback;}}
-function parseIntSafe(value, fallback=0){const n=parseInt(value,10);return Number.isNaN(n)?fallback:n;}
-function eh(value){
-  return String(value??'').replace(/[&<>"']/g, c => ({
-    '&':'&amp;',
-    '<':'&lt;',
-    '>':'&gt;',
-    '"':'&quot;',
-    "'":'&#39;'
-  }[c]));
-}
-function enc(value){return encodeURIComponent(String(value??''));}
 function load(on){document.getElementById('loader').classList.toggle('on',on);}
 function fmtDate(d){if(!d)return'—';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch{return'—';}}
 function toast(type,title,msg=''){
@@ -1661,20 +1583,6 @@ function toast(type,title,msg=''){
 
 /* ── PHOTO UPLOAD ────────────────────────────── */
 let photoBase64 = null;
-const PHOTO_CFG = {
-  maxSide: 1400,          // start as high as possible
-  minSide: 700,           // do not go below this unless absolutely needed
-  startQuality: 0.86,     // best default quality
-  minQuality: 0.52,       // floor to avoid unusable artifacts
-  qualityStep: 0.06,
-  resizeStep: 0.88,
-  // Excel cells are commonly limited to 32,767 chars.
-  hardCellLimit: 32767,
-  // Keep an internal buffer for safety and future metadata.
-  targetMaxChars: 26000
-  // Keep a buffer for safety and the data URL prefix.
-  targetMaxChars: 30000
-};
 
 function puDrag(e, on) {
   e.preventDefault();
@@ -1702,116 +1610,37 @@ function puProcess(file) {
     toast('err','File too large','Please use a photo under 5MB.');
     return;
   }
-  // Resize & compress using canvas
   const reader = new FileReader();
   reader.onload = function(e) {
     const img = new Image();
     img.onload = function() {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        toast('err','Photo processing failed','Could not process image on this device.');
-        return;
-      }
-
-      // Try to keep the best quality possible while staying under Excel-safe length.
-      const ratio = img.width / img.height;
-      const maxSrcSide = Math.max(img.width, img.height);
-      let side = Math.min(PHOTO_CFG.maxSide, maxSrcSide);
-      let bestFit = null;
-      let smallest = null;
-
-      while (side >= PHOTO_CFG.minSide && !bestFit) {
-      let best = null;
-
-      while (side >= PHOTO_CFG.minSide && !best) {
-        let w = img.width >= img.height ? Math.round(side) : Math.round(side * ratio);
-        let h = img.width >= img.height ? Math.round(side / ratio) : Math.round(side);
-        // Never upscale
-        w = Math.min(w, img.width);
-        h = Math.min(h, img.height);
-        canvas.width = w;
-        canvas.height = h;
-        ctx.clearRect(0, 0, w, h);
+      if (!ctx) { toast('err','Photo processing failed','Could not process image.'); return; }
+      // Target 22,000 chars — well under Excel's 32,767 cell limit
+      const TARGET = 22000;
+      let maxSide = 600;
+      let encoded = '';
+      for (let attempt = 0; attempt < 10; attempt++) {
+        let w = img.width, h = img.height;
+        if (w > maxSide || h > maxSide) {
+          if (w > h) { h = Math.round(h * maxSide / w); w = maxSide; }
+          else       { w = Math.round(w * maxSide / h); h = maxSide; }
+        }
+        canvas.width = w; canvas.height = h;
         ctx.drawImage(img, 0, 0, w, h);
-
-        for (let q = PHOTO_CFG.startQuality; q >= PHOTO_CFG.minQuality; q -= PHOTO_CFG.qualityStep) {
-          const encoded = canvas.toDataURL('image/jpeg', Math.max(PHOTO_CFG.minQuality, q));
-          if (!smallest || encoded.length < smallest.length) smallest = encoded; // always keep smallest fallback
-          if (encoded.length <= PHOTO_CFG.targetMaxChars) {
-            bestFit = encoded; // first fit at highest resolution/quality in this iteration
-            break;
-          }
+        for (const q of [0.65, 0.5, 0.38]) {
+          encoded = canvas.toDataURL('image/jpeg', q);
+          if (encoded.length <= TARGET) break;
         }
-        if (bestFit) break;
-        side = Math.floor(side * PHOTO_CFG.resizeStep);
+        if (encoded.length <= TARGET) break;
+        maxSide = Math.floor(maxSide * 0.78);
       }
-
-      // Last-resort pass for extreme images: go smaller and lower quality until target fits.
-      if (!bestFit) {
-        let side2 = Math.max(560, Math.floor(PHOTO_CFG.minSide * 0.8));
-        while (side2 >= 360 && !bestFit) {
-          let w = img.width >= img.height ? side2 : Math.round(side2 * ratio);
-          let h = img.width >= img.height ? Math.round(side2 / ratio) : side2;
-          w = Math.min(w, img.width);
-          h = Math.min(h, img.height);
-          canvas.width = w;
-          canvas.height = h;
-          ctx.clearRect(0, 0, w, h);
-          ctx.drawImage(img, 0, 0, w, h);
-
-          for (let q = PHOTO_CFG.minQuality; q >= 0.35; q -= 0.05) {
-            const encoded = canvas.toDataURL('image/jpeg', Math.max(0.35, q));
-            if (!smallest || encoded.length < smallest.length) smallest = encoded;
-            if (encoded.length <= PHOTO_CFG.targetMaxChars) {
-              bestFit = encoded;
-              break;
-            }
-          }
-          side2 = Math.floor(side2 * 0.86);
-        }
-      }
-
-      photoBase64 = bestFit || smallest;
-      if (!photoBase64) {
-        toast('err','Photo processing failed','Unable to encode this image.');
-        return;
-      }
-      if (photoBase64.length > PHOTO_CFG.hardCellLimit) {
-        toast('err','Image too large for Excel','Please crop the photo or retake it closer before uploading.');
-        photoBase64 = null;
-        return;
-      }
-          if (!best || encoded.length < best.length) best = encoded; // fallback smallest seen
-          if (encoded.length <= PHOTO_CFG.targetMaxChars) {
-            best = encoded; // first fit at highest resolution/quality in this iteration
-            break;
-          }
-        }
-        if (best && best.length <= PHOTO_CFG.targetMaxChars) break;
-        side = Math.floor(side * PHOTO_CFG.resizeStep);
-      }
-
-      // Last-resort pass for very large photos (ultra-high-res panoramas, etc.)
-      if (!best || best.length > PHOTO_CFG.targetMaxChars) {
-        const finalSide = Math.max(560, Math.floor(PHOTO_CFG.minSide * 0.8));
-        let w = img.width >= img.height ? finalSide : Math.round(finalSide * ratio);
-        let h = img.width >= img.height ? Math.round(finalSide / ratio) : finalSide;
-        w = Math.min(w, img.width);
-        h = Math.min(h, img.height);
-        canvas.width = w;
-        canvas.height = h;
-        ctx.clearRect(0, 0, w, h);
-        ctx.drawImage(img, 0, 0, w, h);
-        best = canvas.toDataURL('image/jpeg', PHOTO_CFG.minQuality);
-      }
-
-      photoBase64 = best;
-      // Show preview
+      photoBase64 = encoded;
       document.getElementById('pu-img').src = photoBase64;
       document.getElementById('pu-preview').style.display = 'block';
       document.getElementById('pu-name').style.display = 'block';
-      document.getElementById('pu-name').textContent = `✓ ${file.name} (${Math.round(photoBase64.length/1024)} KB encoded)`;
+      document.getElementById('pu-name').textContent = `✓ ${file.name} (${Math.round(photoBase64.length/1024)}KB encoded)`;
     };
     img.src = e.target.result;
   };
@@ -1865,7 +1694,7 @@ function renderTeamKPIs() {
 
 /* ── CORRECTION HISTORY ─────────────────────── */
 function renderCorrectionHistory(nc) {
-  const log = nc.Correction_Log ? parseJSONSafe(nc.Correction_Log, []) : [];
+  const log = nc.Correction_Log ? JSON.parse(nc.Correction_Log) : [];
 
   // Helper to build log HTML
   function buildLogHTML(log, isAsmNC) {
@@ -1873,14 +1702,14 @@ function renderCorrectionHistory(nc) {
       <div class="history-entry he-correction">
         <div class="he-meta">
           <span class="he-badge he-b-corr">Correction</span>
-          <span>${eh(e.date)}</span>
-          <span>·</span><span>${eh(e.by||'Team')}</span>
+          <span>${e.date}</span>
+          <span>·</span><span>${e.by||'Team'}</span>
           ${!isAsmNC && e.shots ? `<span>·</span><span>${e.shots} shots</span>` : ''}
           ${e.resolved==='No'
             ? '<span style="color:var(--amber);font-weight:600;">⚠ Not yet fixed</span>'
             : '<span style="color:var(--green);font-weight:600;">✓ Fixed</span>'}
         </div>
-        <div class="he-text">${eh(e.actions)}</div>
+        <div class="he-text">${e.actions}</div>
       </div>`).join('');
   }
 
@@ -1914,7 +1743,7 @@ function renderCorrectionHistory(nc) {
 
 /* ── QC HISTORY (reopen log) ────────────────── */
 function renderQCHistory(nc) {
-  const log = nc.QC_Review_Log ? parseJSONSafe(nc.QC_Review_Log, []) : [];
+  const log = nc.QC_Review_Log ? JSON.parse(nc.QC_Review_Log) : [];
   const container = document.getElementById('qc-history');
   const logEl = document.getElementById('qc-history-log');
   if (!container || !logEl) return;
@@ -1924,91 +1753,56 @@ function renderQCHistory(nc) {
     <div class="history-entry ${e.closed==='No'?'he-reopen':'he-correction'}">
       <div class="he-meta">
         <span class="he-badge ${e.closed==='No'?'he-b-reopen':'he-b-corr'}">${e.closed==='No'?'Reopened':'Approved'}</span>
-        <span>${eh(e.date)}</span>
-        <span>·</span><span>${eh(e.approver)}</span>
-        ${e.dept?`<span>·</span><span>${eh(e.dept)}</span>`:''}
+        <span>${e.date}</span>
+        <span>·</span><span>${e.approver}</span>
+        ${e.dept?`<span>·</span><span>${e.dept}</span>`:''}
       </div>
-      ${e.notes?`<div class="he-text">${eh(e.notes)}</div>`:''}
+      ${e.notes?`<div class="he-text">${e.notes}</div>`:''}
     </div>`).join('');
 }
 
 
-/* ── MOBILE HOME SCREEN HINT (iOS / Android only) ───────────── */
+/* ── iOS HOME SCREEN HINT ──────────────────────── */
 (function(){
-  const ua = navigator.userAgent || '';
-  const isIOS = /iphone|ipad|ipod/i.test(ua);
-  const isAndroid = /android/i.test(ua);
-  const isMobile = isIOS || isAndroid;
-  const hint = document.getElementById('ios-hint');
-  if(!hint) return;
-  if(!isMobile){ hint.style.display='none'; return; } // never show on Windows/macOS desktop browsers
-
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
   const dismissed = localStorage.getItem('qns-hint-dismissed');
-  const isStandalone =
-    window.navigator.standalone === true ||
-    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-  if(dismissed || isStandalone) return;
-
-  const titleEl = document.getElementById('ios-hint-title');
-  const bodyEl = document.getElementById('ios-hint-body');
-  if(isAndroid){
-    if(titleEl) titleEl.textContent = 'Install QNS on your Home Screen';
-    if(bodyEl) bodyEl.innerHTML = 'Tap <strong>⋮ Menu</strong> → <strong>Add to Home screen</strong> for quick access';
-  }else{
-    if(titleEl) titleEl.textContent = 'Add QNS to your Home Screen';
-    if(bodyEl) bodyEl.innerHTML = 'Tap <strong>⎙ Share</strong> → <strong>Add to Home Screen</strong> for quick access';
+  if(isIOS && !isStandalone && !dismissed){
+    // Show hint after 3 seconds
+    setTimeout(()=>{
+      const el = document.getElementById('ios-hint');
+      if(el) el.style.display='flex';
+    }, 3000);
   }
-
-  // Show hint after 3 seconds
-  setTimeout(()=>{ hint.style.display='flex'; }, 3000);
 })();
 
 /* ═══════════════════════════════════════════════════════
    ★ ONESIGNAL PUSH NOTIFICATIONS
 ═══════════════════════════════════════════════════════ */
+function isMobileDevice() {
+  return /iphone|ipad|ipod|android|mobile/i.test(navigator.userAgent);
+}
+// Never show notification banner on desktop
+if (!isMobileDevice()) localStorage.setItem('qns_banner_dismissed', 'true');
+
 let _notifDept = localStorage.getItem('qns_dept') || null;
 let _notifEnabled = localStorage.getItem('qns_notif') === 'true';
 let _pendingNotifRequest = false;
 const DEFAULT_ONESIGNAL_APP_ID = '1e0fabbb-6595-4247-894c-1eab1e9019a5';
 
-function isMobileDevice() {
-  return /iphone|ipad|ipod|android|mobile/i.test(navigator.userAgent);
-}
-// Auto-dismiss banner on desktop so it never shows
-if (!isMobileDevice()) localStorage.setItem('qns_banner_dismissed', 'true');
-
 function isStandaloneIOSWebApp() {
-  return isIOSDevice() && window.navigator.standalone === true;
-}
-
-function isIOSDevice() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  return isIOS && window.navigator.standalone === true;
 }
 
 function isOneSignalConfigured() {
   const appId = getOneSignalAppId();
   if (!appId) return false;
-  if (appId === DEFAULT_ONESIGNAL_APP_ID) return false;
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(appId);
 }
 
 function getOneSignalAppId() {
   return String(CONFIG.oneSignalAppId || '').trim();
-}
-
-async function getPushPermission(os) {
-  try {
-    const val = await os.Notifications.permission;
-    if (typeof val !== 'undefined') return val;
-  } catch(e) {}
-  try {
-    if (typeof Notification !== 'undefined') return Notification.permission;
-  } catch(e) {}
-  return 'default';
-}
-
-function isPermissionGranted(permission) {
-  return permission === true || permission === 'granted';
 }
 
 async function initOneSignal() {
@@ -2027,8 +1821,8 @@ async function initOneSignal() {
       // v16: isPushSupported + permission check
       const supported = os.Notifications.isPushSupported();
       if (!supported) { toast('err','Push not supported','This browser/device does not support web push.'); return; }
-      const permission = await getPushPermission(os);
-      const granted = isPermissionGranted(permission);
+      const permission = await os.Notifications.permission;
+      const granted = permission === true || permission === 'granted';
       toast('info', 'Permission state', String(permission));
       if (granted) {
         _notifEnabled = true;
@@ -2038,7 +1832,7 @@ async function initOneSignal() {
           toast('ok','Tag set','department = ' + _notifDept);
         }
         updateNotifNavBtn();
-      } else if (!localStorage.getItem('qns_banner_dismissed') && isMobileDevice()) {
+      } else if (!localStorage.getItem('qns_banner_dismissed')) {
         setTimeout(showNotifBanner, 1500);
       }
     });
@@ -2050,12 +1844,10 @@ async function initOneSignal() {
 
 function showNotifBanner() {
   if (!isMobileDevice()) return;
-  const el = document.getElementById('notif-banner');
-  if (el) el.style.transform = 'translateY(0)';
+  document.getElementById('notif-banner').style.transform = 'translateY(0)';
 }
 function dismissNotifBanner() {
-  const el = document.getElementById('notif-banner');
-  if (el) el.style.transform = 'translateY(-100%)';
+  document.getElementById('notif-banner').style.transform = 'translateY(-100%)';
   localStorage.setItem('qns_banner_dismissed', 'true');
 }
 function enableNotifications() {
@@ -2065,14 +1857,10 @@ function enableNotifications() {
 }
 async function requestNotifPermission() {
   if (!isOneSignalConfigured()) {
-    toast('err','OneSignal App ID invalid','Set a real OneSignal App ID in CONFIG.oneSignalAppId (placeholder/default IDs are rejected).'); return;
+    toast('err','OneSignal App ID invalid','Please verify CONFIG.oneSignalAppId'); return;
   }
-  if (isStandaloneIOSWebApp() === false && isIOSDevice()) {
+  if (isStandaloneIOSWebApp() === false && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
     toast('err','Open from Home Screen','On iPhone, install QNS to Home Screen first, then open it there to enable push.');
-    return;
-  }
-  if (!window.OneSignalDeferred) {
-    toast('err','OneSignal not ready','SDK is still loading, please try again.');
     return;
   }
   window.OneSignalDeferred.push(async (os) => {
@@ -2086,10 +1874,10 @@ async function requestNotifPermission() {
       }
     } catch(e) {
       // Fallback
-      try { await os.Notifications.requestPermission(); } catch(innerErr) {}
+      await os.Notifications.requestPermission();
     }
-    const permission = await getPushPermission(os);
-    const granted = isPermissionGranted(permission);
+    const permission = await os.Notifications.permission;
+    const granted = permission === true || permission === 'granted';
     toast('info','Permission result', String(permission));
     if (granted) {
       _notifEnabled = true;
@@ -2127,7 +1915,6 @@ function selectDept(btn) {
   saveBtn.disabled = false; saveBtn.style.opacity = '1';
 }
 async function saveDept() {
-  if (!_notifDept) { toast('err','Select a department','Please select your department first.'); return; }
   localStorage.setItem('qns_dept', _notifDept);
   closeDeptModal();
   updateNotifNavBtn();
@@ -2153,12 +1940,11 @@ function deptLabel(d) {
 async function pushNotify(targetDept, title, message, ncId) {
   if (!CONFIG.flowNotify || CONFIG.flowNotify === 'https://default67d2558fa4af4478bc72d7585f436b.ad.environment.api.powerplatform.com/powerautomate/automations/direct/workflows/0a951806d7da462fb0d55484fc2d1544/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Hh9bMGt-7AyXlxE201FImeJvtCv1fUj0uHhVRRsIQQQ') return;
   try {
-    const res = await fetch(CONFIG.flowNotify, {
+    fetch(CONFIG.flowNotify, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetDept, title, message, ncId })
     });
-    if (!res.ok) console.warn('pushNotify non-200:', res.status);
   } catch(e) { console.warn('pushNotify:', e); }
 }
 
@@ -2168,12 +1954,12 @@ async function pushNotify(targetDept, title, message, ncId) {
 <div id="ios-hint" style="display:none;position:fixed;bottom:0;left:0;right:0;
   background:var(--sw-navy);color:var(--white);padding:14px 20px 
   calc(14px + env(safe-area-inset-bottom));
-  z-index:9998;align-items:center;gap:12px;
+  z-index:9998;display:flex;align-items:center;gap:12px;
   box-shadow:0 -4px 20px rgba(0,0,0,.3);font-size:13px;">
   <div style="font-size:28px;flex-shrink:0;">📲</div>
   <div style="flex:1;">
-    <div id="ios-hint-title" style="font-weight:700;margin-bottom:2px;">Add QNS to your Home Screen</div>
-    <div id="ios-hint-body" style="color:rgba(255,255,255,.65);font-size:12px;">Tap <strong>⎙ Share</strong> → <strong>Add to Home Screen</strong> for quick access</div>
+    <div style="font-weight:700;margin-bottom:2px;">Add QNS to your Home Screen</div>
+    <div style="color:rgba(255,255,255,.65);font-size:12px;">Tap <strong>⎙ Share</strong> → <strong>Add to Home Screen</strong> for quick access</div>
   </div>
   <button onclick="document.getElementById('ios-hint').style.display='none';localStorage.setItem('qns-hint-dismissed','1')"
     style="background:transparent;border:none;color:rgba(255,255,255,.5);font-size:22px;cursor:pointer;padding:4px;">✕</button>
